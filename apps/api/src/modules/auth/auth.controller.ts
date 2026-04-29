@@ -14,6 +14,7 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  // JWT is stateless — token invalidation is the client's responsibility (delete it from storage)
   @Public()
   @Post('logout')
   @HttpCode(HttpStatus.OK)

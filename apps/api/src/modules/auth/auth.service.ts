@@ -6,6 +6,10 @@ import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
+// Pre-computed bcrypt hash used as a timing dummy when user is not found.
+// Ensures bcrypt.compare always runs, preventing user-enumeration via timing.
+const DUMMY_HASH = '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8Si0vLi5i.kvR6VStTy';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -15,12 +19,10 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    const hashToCompare = user?.passwordHash ?? DUMMY_HASH;
+    const match = await bcrypt.compare(dto.password, hashToCompare);
 
-    const match = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!match) {
+    if (!user || !user.isActive || !match) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

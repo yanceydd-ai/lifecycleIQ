@@ -37,6 +37,7 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     usersService = module.get(UsersService);
+    jest.clearAllMocks();
   });
 
   describe('login', () => {
@@ -74,6 +75,17 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'admin@test.com', password: 'wrong' }),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('calls bcrypt.compare even when user is not found', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.login({ email: 'ghost@x.com', password: 'pass' }),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(bcrypt.compare).toHaveBeenCalledTimes(1);
     });
   });
 });
