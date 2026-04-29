@@ -15,7 +15,7 @@ export class AuditLogService {
   constructor(private prisma: PrismaService) {}
 
   async log(entry: AuditLogEntry) {
-    return this.prisma.auditLog.create({ data: entry });
+    return this.prisma.auditLog.create({ data: entry as any });
   }
 
   async findByEntity(entityType: string, entityId: string) {
