@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  admin
+  editor
+  finance_viewer
+  department_viewer
+  viewer
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  displayName  String      @map("display_name")
+  passwordHash String      @map("password_hash")
+  role         Role        @default(viewer)
+  departmentId String?     @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+  isActive     Boolean     @default(true) @map("is_active")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Department {
+  id         String   @id @default(uuid())
+  name       String
+  budgetCode String?  @map("budget_code")
+  ownerId    String?  @map("owner_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  users      User[]
+
+  @@map("departments")
+}
+
+model Location {
+  id           String   @id @default(uuid())
+  name         String
+  building     String?
+  room         String?
+  locationType String?  @map("location_type")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("locations")
+}
+
+model Vendor {
+  id              String   @id @default(uuid())
+  name            String
+  website         String?
+  accountRepName  String?  @map("account_rep_name")
+  accountRepEmail String?  @map("account_rep_email")
+  supportEmail    String?  @map("support_email")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("vendors")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_log")
+}
