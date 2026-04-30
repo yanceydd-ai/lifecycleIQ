@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { Prisma, $Enums } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -37,6 +38,7 @@ export class UsersService {
     return user;
   }
 
+  /** Returns full user row including passwordHash — for auth use only, never serialize to client. */
   findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
   }
@@ -51,7 +53,7 @@ export class UsersService {
         email: dto.email,
         displayName: dto.displayName,
         passwordHash,
-        role: dto.role as any,
+        role: dto.role as $Enums.Role,
         departmentId: dto.departmentId,
       },
       select: safeSelect,
@@ -70,9 +72,12 @@ export class UsersService {
 
   async update(id: string, dto: UpdateUserDto, actorId: string) {
     const existing = await this.findOne(id);
-    const { password, ...rest } = dto;
-    const data: any = { ...rest };
-    if (password) data.passwordHash = await bcrypt.hash(password, 12);
+    const data: Prisma.UserUncheckedUpdateInput = {};
+    if (dto.displayName !== undefined) data.displayName = dto.displayName;
+    if (dto.role !== undefined) data.role = dto.role as $Enums.Role;
+    if (dto.departmentId !== undefined) data.departmentId = dto.departmentId;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.password) data.passwordHash = await bcrypt.hash(dto.password, 12);
 
     const user = await this.prisma.user.update({ where: { id }, data, select: safeSelect });
 

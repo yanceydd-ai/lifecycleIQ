@@ -95,6 +95,49 @@ describe('UsersService', () => {
     });
   });
 
+  describe('update', () => {
+    it('throws NotFoundException when user does not exist', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      await expect(
+        service.update('missing', { displayName: 'New' }, 'actor-id'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('does not call bcrypt when password is not provided', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(safeUser);
+      mockPrisma.user.update.mockResolvedValue(safeUser);
+
+      await service.update('uuid-1', { displayName: 'New' }, 'actor-id');
+
+      expect(bcrypt.hash).not.toHaveBeenCalled();
+    });
+
+    it('hashes password when provided', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(safeUser);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('new-hash');
+      mockPrisma.user.update.mockResolvedValue(safeUser);
+
+      await service.update('uuid-1', { password: 'newpass123' }, 'actor-id');
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('newpass123', 12);
+    });
+
+    it('logs UPDATE audit entry with old and new values', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(safeUser);
+      mockPrisma.user.update.mockResolvedValue({ ...safeUser, role: 'editor' });
+
+      await service.update('uuid-1', { role: 'editor' as any }, 'actor-id');
+
+      expect(mockAuditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'UPDATE',
+          entityType: 'User',
+          entityId: 'uuid-1',
+        }),
+      );
+    });
+  });
+
   describe('remove', () => {
     it('deletes user and logs audit entry', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(safeUser);
