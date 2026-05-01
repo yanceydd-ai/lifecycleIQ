@@ -17,13 +17,13 @@ export function computeUtilization(product: SoftwareProduct): SoftwareProductWit
   if (!qtyPurchased || qtyActivelyUsed === null || qtyActivelyUsed === undefined) {
     return { ...product, utilizationRate: null, unusedLicenses: null, potentialSavings: null, lowUtilization: false };
   }
-  const utilizationRate = Math.round((qtyActivelyUsed / qtyPurchased) * 100 * 100) / 100;
+  const utilizationRate = Math.round((qtyActivelyUsed / qtyPurchased) * 10000) / 10000;
   const unusedLicenses = qtyPurchased - qtyActivelyUsed;
   const potentialSavings =
-    annualCost && unusedLicenses > 0
-      ? Math.round((annualCost.toNumber() / qtyPurchased) * unusedLicenses * 100) / 100
+    product.licenseModel === 'per_user' && product.unitCost && unusedLicenses > 0
+      ? Math.round(product.unitCost.toNumber() * unusedLicenses * 100) / 100
       : null;
-  const lowUtilization = utilizationRate < 70;
+  const lowUtilization = utilizationRate < 0.70;
   return { ...product, utilizationRate, unusedLicenses, potentialSavings, lowUtilization };
 }
 

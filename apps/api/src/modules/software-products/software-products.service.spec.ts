@@ -29,7 +29,7 @@ const baseProduct = {
   qtyPurchased: 100,
   qtyAssigned: null,
   qtyActivelyUsed: 75,
-  unitCost: null,
+  unitCost: { toNumber: () => 15 } as any,
   annualCost: decimal(12000),
   billingFrequency: null,
   contractStartDate: null,
@@ -76,10 +76,10 @@ describe('computeUtilization', () => {
     expect(result.lowUtilization).toBe(false);
   });
 
-  it('computes utilizationRate as usersCount / licenseCount * 100 rounded to 2dp', () => {
+  it('computes utilizationRate as a decimal ratio rounded to 4dp', () => {
     const result = computeUtilization({ ...baseProduct, qtyPurchased: 3, qtyActivelyUsed: 1, annualCost: null } as any);
-    // 1/3 * 100 = 33.33...
-    expect(result.utilizationRate).toBe(33.33);
+    // 1/3 = 0.3333...
+    expect(result.utilizationRate).toBe(0.3333);
   });
 
   it('computes unusedLicenses as qtyPurchased - qtyActivelyUsed', () => {
@@ -87,27 +87,44 @@ describe('computeUtilization', () => {
     expect(result.unusedLicenses).toBe(25);
   });
 
-  it('computes potentialSavings when annualCost is set', () => {
-    // annualCost=12000, qtyPurchased=100, qtyActivelyUsed=75 => unused=25
-    // savings = 25 * (12000 / 100) = 25 * 120 = 3000
-    const result = computeUtilization({ ...baseProduct, qtyPurchased: 100, qtyActivelyUsed: 75, annualCost: decimal(12000) } as any);
-    expect(result.potentialSavings).toBe(3000);
+  it('computes potentialSavings for per_user model using unitCost', () => {
+    // licenseModel=per_user, unitCost=15, qtyPurchased=100, qtyActivelyUsed=80 => unused=20
+    // savings = 20 * 15 = 300
+    const result = computeUtilization({
+      ...baseProduct,
+      licenseModel: 'per_user',
+      qtyPurchased: 100,
+      qtyActivelyUsed: 80,
+      unitCost: { toNumber: () => 15 } as any,
+    } as any);
+    expect(result.potentialSavings).toBe(300);
   });
 
-  it('sets lowUtilization true when utilizationRate < 70', () => {
-    // 50/100 * 100 = 50 < 70
-    const result = computeUtilization({ ...baseProduct, qtyPurchased: 100, qtyActivelyUsed: 50, annualCost: null } as any);
+  it('returns null potentialSavings for site_license model', () => {
+    const result = computeUtilization({
+      ...baseProduct,
+      licenseModel: 'site_license',
+      qtyPurchased: 100,
+      qtyActivelyUsed: 80,
+      unitCost: { toNumber: () => 15 } as any,
+    } as any);
+    expect(result.potentialSavings).toBeNull();
+  });
+
+  it('sets lowUtilization true when utilizationRate < 0.70', () => {
+    // 60/100 = 0.6 < 0.70
+    const result = computeUtilization({ ...baseProduct, qtyPurchased: 100, qtyActivelyUsed: 60, annualCost: null } as any);
     expect(result.lowUtilization).toBe(true);
   });
 
-  it('sets lowUtilization false when utilizationRate >= 70', () => {
-    // 75/100 * 100 = 75 >= 70
-    const result = computeUtilization({ ...baseProduct, qtyPurchased: 100, qtyActivelyUsed: 75, annualCost: null } as any);
+  it('sets lowUtilization false when utilizationRate >= 0.70', () => {
+    // 70/100 = 0.7 >= 0.70
+    const result = computeUtilization({ ...baseProduct, qtyPurchased: 100, qtyActivelyUsed: 70, annualCost: null } as any);
     expect(result.lowUtilization).toBe(false);
   });
 
-  it('sets potentialSavings null when annualCost is null', () => {
-    const result = computeUtilization({ ...baseProduct, qtyPurchased: 100, qtyActivelyUsed: 75, annualCost: null } as any);
+  it('sets potentialSavings null when unitCost is null', () => {
+    const result = computeUtilization({ ...baseProduct, qtyPurchased: 100, qtyActivelyUsed: 75, unitCost: null } as any);
     expect(result.potentialSavings).toBeNull();
   });
 });
