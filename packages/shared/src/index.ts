@@ -4,3 +4,6 @@ export * from './types/department';
 export * from './types/location';
 export * from './types/vendor';
 export * from './types/audit-log';
+export * from './types/hardware-asset';
+export * from './types/software-product';
+export * from './types/contract';
