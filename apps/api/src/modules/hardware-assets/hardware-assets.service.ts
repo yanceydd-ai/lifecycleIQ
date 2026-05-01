@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { HardwareAsset } from '@prisma/client';
+import { HardwareAsset, LifecycleStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreateHardwareAssetDto } from './dto/create-hardware-asset.dto';
@@ -57,11 +57,29 @@ export class HardwareAssetsService {
   async create(dto: CreateHardwareAssetDto, actorId: string): Promise<HardwareAssetWithComputed> {
     const asset = await this.prisma.hardwareAsset.create({
       data: {
-        ...dto,
+        assetType: dto.assetType,
+        assetTag: dto.assetTag,
+        manufacturer: dto.manufacturer,
+        model: dto.model,
+        serialNumber: dto.serialNumber,
         purchaseDate: dto.purchaseDate ? new Date(dto.purchaseDate) : undefined,
+        purchaseCost: dto.purchaseCost !== undefined ? dto.purchaseCost : undefined,
+        replacementCost: dto.replacementCost !== undefined ? dto.replacementCost : undefined,
+        usefulLifeYears: dto.usefulLifeYears,
+        replacementYearOverride: dto.replacementYearOverride,
         warrantyEndDate: dto.warrantyEndDate ? new Date(dto.warrantyEndDate) : undefined,
         supportEndDate: dto.supportEndDate ? new Date(dto.supportEndDate) : undefined,
-      } as any,
+        lifecycleStatus: dto.lifecycleStatus,
+        criticality: dto.criticality,
+        fundingType: dto.fundingType,
+        locationId: dto.locationId,
+        departmentId: dto.departmentId,
+        vendorId: dto.vendorId,
+        assignedUserId: dto.assignedUserId,
+        businessOwner: dto.businessOwner,
+        technicalOwner: dto.technicalOwner,
+        notes: dto.notes,
+      },
     });
     await this.auditLog.log({
       userId: actorId,
@@ -79,11 +97,29 @@ export class HardwareAssetsService {
     const asset = await this.prisma.hardwareAsset.update({
       where: { id },
       data: {
-        ...d,
+        assetType: d.assetType,
+        assetTag: d.assetTag,
+        manufacturer: d.manufacturer,
+        model: d.model,
+        serialNumber: d.serialNumber,
         purchaseDate: d.purchaseDate ? new Date(d.purchaseDate) : undefined,
+        purchaseCost: d.purchaseCost !== undefined ? d.purchaseCost : undefined,
+        replacementCost: d.replacementCost !== undefined ? d.replacementCost : undefined,
+        usefulLifeYears: d.usefulLifeYears,
+        replacementYearOverride: d.replacementYearOverride,
         warrantyEndDate: d.warrantyEndDate ? new Date(d.warrantyEndDate) : undefined,
         supportEndDate: d.supportEndDate ? new Date(d.supportEndDate) : undefined,
-      } as any,
+        lifecycleStatus: d.lifecycleStatus,
+        criticality: d.criticality,
+        fundingType: d.fundingType,
+        locationId: d.locationId,
+        departmentId: d.departmentId,
+        vendorId: d.vendorId,
+        assignedUserId: d.assignedUserId,
+        businessOwner: d.businessOwner,
+        technicalOwner: d.technicalOwner,
+        notes: d.notes,
+      },
     });
     await this.auditLog.log({
       userId: actorId,
@@ -100,7 +136,7 @@ export class HardwareAssetsService {
     await this.findOne(id);
     await this.prisma.hardwareAsset.update({
       where: { id },
-      data: { lifecycleStatus: 'retired' } as any,
+      data: { lifecycleStatus: LifecycleStatus.retired },
     });
     await this.auditLog.log({
       userId: actorId,

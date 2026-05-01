@@ -3,7 +3,7 @@ import { AssetType, LifecycleStatus, Criticality, FundingType } from '@prisma/cl
 
 export class CreateHardwareAssetDto {
   @IsEnum(AssetType)
-  assetType: string;
+  assetType: AssetType;
 
   @IsOptional() @IsString()
   assetTag?: string;
@@ -39,13 +39,13 @@ export class CreateHardwareAssetDto {
   supportEndDate?: string;
 
   @IsOptional() @IsEnum(LifecycleStatus)
-  lifecycleStatus?: string;
+  lifecycleStatus?: LifecycleStatus;
 
   @IsOptional() @IsEnum(Criticality)
-  criticality?: string;
+  criticality?: Criticality;
 
   @IsOptional() @IsEnum(FundingType)
-  fundingType?: string;
+  fundingType?: FundingType;
 
   @IsOptional() @IsUUID()
   locationId?: string;
