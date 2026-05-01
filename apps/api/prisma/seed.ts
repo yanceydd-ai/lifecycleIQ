@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -93,6 +94,147 @@ async function main() {
   });
   console.log(`Admin user: ${admin.email} (password: Admin1234!)`);
 
+  console.log('Seeding Phase 2a data...');
+
+  const hardwareAssets = await Promise.all([
+    prisma.hardwareAsset.upsert({
+      where: { id: 'hw-seed-1' },
+      update: {},
+      create: {
+        id: 'hw-seed-1',
+        assetTag: 'HW-001',
+        assetType: 'laptop',
+        purchaseDate: new Date('2022-01-15'),
+        usefulLifeYears: 4,
+        warrantyEndDate: new Date('2025-01-15'),
+        purchaseCost: new Decimal('1200.00'),
+        lifecycleStatus: 'active',
+        criticality: 'medium',
+        departmentId: 'dept-it-000000000000',
+      },
+    }),
+    prisma.hardwareAsset.upsert({
+      where: { id: 'hw-seed-2' },
+      update: {},
+      create: {
+        id: 'hw-seed-2',
+        assetTag: 'HW-002',
+        assetType: 'desktop',
+        purchaseDate: new Date('2020-03-10'),
+        usefulLifeYears: 5,
+        supportEndDate: new Date('2025-03-10'),
+        purchaseCost: new Decimal('950.00'),
+        lifecycleStatus: 'active',
+        criticality: 'mission_critical',
+      },
+    }),
+    prisma.hardwareAsset.upsert({
+      where: { id: 'hw-seed-3' },
+      update: {},
+      create: {
+        id: 'hw-seed-3',
+        assetTag: 'HW-003',
+        assetType: 'network_switch',
+        purchaseDate: new Date('2019-06-01'),
+        usefulLifeYears: 7,
+        purchaseCost: new Decimal('3500.00'),
+        lifecycleStatus: 'active',
+        criticality: 'mission_critical',
+      },
+    }),
+  ]);
+  console.log(`Created ${hardwareAssets.length} hardware assets`);
+
+  const softwareProducts = await Promise.all([
+    prisma.softwareProduct.upsert({
+      where: { id: 'sw-seed-1' },
+      update: {},
+      create: {
+        id: 'sw-seed-1',
+        name: 'Microsoft 365',
+        licenseModel: 'per_user',
+        qtyPurchased: 50,
+        qtyActivelyUsed: 42,
+        unitCost: new Decimal('15.00'),
+        annualCost: new Decimal('9000.00'),
+        renewalDate: new Date('2026-12-31'),
+        noticePeriodDays: 60,
+        status: 'active',
+        vendorId: 'vnd-ms-000000000000',
+      },
+    }),
+    prisma.softwareProduct.upsert({
+      where: { id: 'sw-seed-2' },
+      update: {},
+      create: {
+        id: 'sw-seed-2',
+        name: 'Adobe Creative Cloud',
+        licenseModel: 'per_user',
+        qtyPurchased: 10,
+        qtyActivelyUsed: 3,
+        unitCost: new Decimal('60.00'),
+        annualCost: new Decimal('7200.00'),
+        renewalDate: new Date('2026-09-30'),
+        noticePeriodDays: 30,
+        status: 'active',
+        recommendedAction: 'renew_with_reduction',
+      },
+    }),
+    prisma.softwareProduct.upsert({
+      where: { id: 'sw-seed-3' },
+      update: {},
+      create: {
+        id: 'sw-seed-3',
+        name: 'GitHub Enterprise',
+        licenseModel: 'site_license',
+        qtyPurchased: 100,
+        qtyActivelyUsed: 85,
+        annualCost: new Decimal('21000.00'),
+        renewalDate: new Date('2027-03-15'),
+        noticePeriodDays: 90,
+        status: 'active',
+        vendorId: 'vnd-goo-0000000000',
+      },
+    }),
+  ]);
+  console.log(`Created ${softwareProducts.length} software products`);
+
+  const contracts = await Promise.all([
+    prisma.contract.upsert({
+      where: { id: 'ct-seed-1' },
+      update: {},
+      create: {
+        id: 'ct-seed-1',
+        name: 'Microsoft EA',
+        contractType: 'software_subscription',
+        softwareProductId: 'sw-seed-1',
+        endDate: new Date('2026-12-31'),
+        noticePeriodDays: 60,
+        autoRenewal: false,
+        annualCost: new Decimal('9000.00'),
+        approvalStatus: 'approved',
+        vendorId: 'vnd-ms-000000000000',
+      },
+    }),
+    prisma.contract.upsert({
+      where: { id: 'ct-seed-2' },
+      update: {},
+      create: {
+        id: 'ct-seed-2',
+        name: 'Adobe Creative Cloud Contract',
+        contractType: 'saas_agreement',
+        softwareProductId: 'sw-seed-2',
+        endDate: new Date('2026-09-30'),
+        noticePeriodDays: 30,
+        autoRenewal: true,
+        annualCost: new Decimal('7200.00'),
+        approvalStatus: 'approved',
+      },
+    }),
+  ]);
+  console.log(`Created ${contracts.length} contracts`);
+
+  console.log('Seeded hardware assets, software products, and contracts');
   console.log('Seed complete.');
 }
 
