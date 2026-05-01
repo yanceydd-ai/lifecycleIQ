@@ -16,55 +16,167 @@ enum Role {
   viewer
 }
 
+enum AssetType {
+  laptop
+  desktop
+  tablet
+  server
+  storage
+  network_switch
+  wireless_access_point
+  firewall
+  ups
+  printer
+  mfp_copier
+  classroom_display
+  projector
+  av_equipment
+  phone
+  camera
+  iot_device
+  other
+}
+
+enum LifecycleStatus {
+  planned
+  ordered
+  active
+  spare
+  in_repair
+  due_for_replacement
+  deferred
+  retired
+  disposed
+}
+
+enum Criticality {
+  low
+  medium
+  high
+  mission_critical
+}
+
+enum FundingType {
+  opex
+  capex
+}
+
+enum LicenseModel {
+  per_user
+  per_device
+  site_license
+  fte_based
+  concurrent_user
+  consumption_based
+  flat_annual
+  multi_year_agreement
+  other
+}
+
+enum SoftwareStatus {
+  active
+  trial
+  under_review
+  renewal_pending
+  sunset_planned
+  replaced
+  terminated
+}
+
+enum RecommendedAction {
+  renew_as_is
+  renew_with_reduction
+  expand
+  renegotiate
+  replace
+  consolidate
+  terminate
+  monitor
+  escalate
+}
+
+enum ContractType {
+  software_subscription
+  saas_agreement
+  hardware_support
+  maintenance_agreement
+  managed_service
+  telecom
+  internet_circuit
+  cloud_service
+  professional_service
+  warranty
+  other
+}
+
+enum ApprovalStatus {
+  not_reviewed
+  review_required
+  pending_quote
+  pending_approval
+  approved
+  rejected
+  deferred
+  cancelled
+}
+
 model User {
-  id           String      @id @default(uuid())
-  email        String      @unique
-  displayName  String      @map("display_name")
-  passwordHash String      @map("password_hash")
-  role         Role        @default(viewer)
-  departmentId String?     @map("department_id")
-  department   Department? @relation(fields: [departmentId], references: [id])
-  isActive     Boolean     @default(true) @map("is_active")
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
+  id             String          @id @default(uuid())
+  email          String          @unique
+  displayName    String          @map("display_name")
+  passwordHash   String          @map("password_hash")
+  role           Role            @default(viewer)
+  departmentId   String?         @map("department_id")
+  department     Department?     @relation(fields: [departmentId], references: [id])
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  assignedAssets HardwareAsset[]
 
   @@map("users")
 }
 
 model Department {
-  id         String   @id @default(uuid())
-  name       String
-  budgetCode String?  @map("budget_code")
-  ownerId    String?  @map("owner_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  users      User[]
+  id               String            @id @default(uuid())
+  name             String
+  budgetCode       String?           @map("budget_code")
+  ownerId          String?           @map("owner_id")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  users            User[]
+  hardwareAssets   HardwareAsset[]
+  softwareProducts SoftwareProduct[]
+  contracts        Contract[]
 
   @@map("departments")
 }
 
 model Location {
-  id           String   @id @default(uuid())
-  name         String
-  building     String?
-  room         String?
-  locationType String?  @map("location_type")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             String          @id @default(uuid())
+  name           String
+  building       String?
+  room           String?
+  locationType   String?         @map("location_type")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  hardwareAssets HardwareAsset[]
 
   @@map("locations")
 }
 
 model Vendor {
-  id              String   @id @default(uuid())
-  name            String
-  website         String?
-  accountRepName  String?  @map("account_rep_name")
-  accountRepEmail String?  @map("account_rep_email")
-  supportEmail    String?  @map("support_email")
-  notes           String?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String            @id @default(uuid())
+  name             String
+  website          String?
+  accountRepName   String?           @map("account_rep_name")
+  accountRepEmail  String?           @map("account_rep_email")
+  supportEmail     String?           @map("support_email")
+  notes            String?
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  hardwareAssets   HardwareAsset[]
+  softwareProducts SoftwareProduct[]
+  contracts        Contract[]
 
   @@map("vendors")
 }
@@ -80,4 +192,109 @@ model AuditLog {
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@map("audit_log")
+}
+
+model HardwareAsset {
+  id                      String          @id @default(uuid())
+  assetTag                String?         @unique @map("asset_tag")
+  assetType               AssetType       @map("asset_type")
+  manufacturer            String?
+  model                   String?
+  serialNumber            String?         @map("serial_number")
+  purchaseDate            DateTime?       @map("purchase_date")
+  purchaseCost            Decimal?        @map("purchase_cost") @db.Decimal(12, 2)
+  replacementCost         Decimal?        @map("replacement_cost") @db.Decimal(12, 2)
+  usefulLifeYears         Int?            @map("useful_life_years")
+  replacementYearOverride Int?            @map("replacement_year_override")
+  warrantyEndDate         DateTime?       @map("warranty_end_date")
+  supportEndDate          DateTime?       @map("support_end_date")
+  lifecycleStatus         LifecycleStatus @default(active) @map("lifecycle_status")
+  criticality             Criticality     @default(medium)
+  fundingType             FundingType     @default(capex) @map("funding_type")
+  locationId              String?         @map("location_id")
+  location                Location?       @relation(fields: [locationId], references: [id])
+  departmentId            String?         @map("department_id")
+  department              Department?     @relation(fields: [departmentId], references: [id])
+  vendorId                String?         @map("vendor_id")
+  vendor                  Vendor?         @relation(fields: [vendorId], references: [id])
+  assignedUserId          String?         @map("assigned_user_id")
+  assignedUser            User?           @relation(fields: [assignedUserId], references: [id])
+  businessOwner           String?         @map("business_owner")
+  technicalOwner          String?         @map("technical_owner")
+  notes                   String?
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+  contracts               Contract[]
+
+  @@map("hardware_assets")
+}
+
+model SoftwareProduct {
+  id                String             @id @default(uuid())
+  name              String
+  vendorId          String?            @map("vendor_id")
+  vendor            Vendor?            @relation(fields: [vendorId], references: [id])
+  category          String?
+  description       String?
+  licenseModel      LicenseModel?      @map("license_model")
+  qtyPurchased      Int?               @map("qty_purchased")
+  qtyAssigned       Int?               @map("qty_assigned")
+  qtyActivelyUsed   Int?               @map("qty_actively_used")
+  unitCost          Decimal?           @map("unit_cost") @db.Decimal(12, 2)
+  annualCost        Decimal?           @map("annual_cost") @db.Decimal(12, 2)
+  billingFrequency  String?            @map("billing_frequency")
+  contractStartDate DateTime?          @map("contract_start_date")
+  contractEndDate   DateTime?          @map("contract_end_date")
+  renewalDate       DateTime?          @map("renewal_date")
+  noticePeriodDays  Int?               @map("notice_period_days")
+  autoRenewal       Boolean            @default(false) @map("auto_renewal")
+  status            SoftwareStatus     @default(active)
+  recommendedAction RecommendedAction? @map("recommended_action")
+  fundingType       FundingType        @default(opex) @map("funding_type")
+  departmentId      String?            @map("department_id")
+  department        Department?        @relation(fields: [departmentId], references: [id])
+  businessOwner     String?            @map("business_owner")
+  technicalOwner    String?            @map("technical_owner")
+  budgetOwner       String?            @map("budget_owner")
+  strategicValue    String?            @map("strategic_value")
+  riskIfNotRenewed  String?            @map("risk_if_not_renewed")
+  notes             String?
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  contracts         Contract[]
+
+  @@map("software_products")
+}
+
+model Contract {
+  id                           String           @id @default(uuid())
+  name                         String
+  vendorId                     String?          @map("vendor_id")
+  vendor                       Vendor?          @relation(fields: [vendorId], references: [id])
+  contractType                 ContractType     @map("contract_type")
+  hardwareAssetId              String?          @map("hardware_asset_id")
+  hardwareAsset                HardwareAsset?   @relation(fields: [hardwareAssetId], references: [id])
+  softwareProductId            String?          @map("software_product_id")
+  softwareProduct              SoftwareProduct? @relation(fields: [softwareProductId], references: [id])
+  startDate                    DateTime?        @map("start_date")
+  endDate                      DateTime?        @map("end_date")
+  renewalDate                  DateTime?        @map("renewal_date")
+  noticePeriodDays             Int?             @map("notice_period_days")
+  cancellationDeadlineOverride DateTime?        @map("cancellation_deadline_override")
+  autoRenewal                  Boolean          @default(false) @map("auto_renewal")
+  annualCost                   Decimal?         @map("annual_cost") @db.Decimal(12, 2)
+  renewalCost                  Decimal?         @map("renewal_cost") @db.Decimal(12, 2)
+  escalationPct                Decimal?         @map("escalation_pct") @db.Decimal(5, 2)
+  approvalStatus               ApprovalStatus   @default(not_reviewed) @map("approval_status")
+  documentLink                 String?          @map("document_link")
+  departmentId                 String?          @map("department_id")
+  department                   Department?      @relation(fields: [departmentId], references: [id])
+  businessOwner                String?          @map("business_owner")
+  technicalOwner               String?          @map("technical_owner")
+  budgetOwner                  String?          @map("budget_owner")
+  notes                        String?
+  createdAt                    DateTime         @default(now()) @map("created_at")
+  updatedAt                    DateTime         @updatedAt @map("updated_at")
+
+  @@map("contracts")
 }
