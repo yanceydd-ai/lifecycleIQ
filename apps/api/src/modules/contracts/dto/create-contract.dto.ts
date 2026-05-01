@@ -16,9 +16,9 @@ export class CreateContractDto {
   @IsNotEmpty()
   name: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsEnum(ContractType)
-  contractType?: ContractType;
+  contractType: ContractType;
 
   @IsOptional()
   @IsUUID()
@@ -46,11 +46,7 @@ export class CreateContractDto {
 
   @IsOptional()
   @IsNumberString()
-  totalValue?: string;
-
-  @IsOptional()
-  @IsNumberString()
-  annualValue?: string;
+  annualCost?: string;
 
   @IsOptional()
   @IsEnum(ApprovalStatus)

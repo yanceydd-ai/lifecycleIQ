@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { AuthUser, Role } from '@lifecycleiq/shared';
+import { ContractType } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CreateContractDto } from './dto/create-contract.dto';
@@ -15,7 +16,7 @@ export class ContractsController {
     @Query('contractType') contractType?: string,
     @Query('departmentId') departmentId?: string,
   ) {
-    return this.service.findAll({ contractType: contractType as any, departmentId });
+    return this.service.findAll({ contractType: contractType as ContractType, departmentId });
   }
 
   @Get(':id')
