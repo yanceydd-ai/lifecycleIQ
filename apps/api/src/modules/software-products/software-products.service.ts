@@ -64,6 +64,7 @@ export class SoftwareProductsService {
         recommendedAction: dto.recommendedAction,
         notes: dto.notes,
         departmentId: dto.departmentId,
+        vendorId: dto.vendorId,
       },
     });
     await this.auditLog.log({
@@ -92,6 +93,7 @@ export class SoftwareProductsService {
         recommendedAction: d.recommendedAction,
         notes: d.notes,
         departmentId: d.departmentId,
+        vendorId: d.vendorId,
       },
     });
     await this.auditLog.log({

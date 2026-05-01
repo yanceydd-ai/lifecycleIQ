@@ -6,9 +6,8 @@ export class CreateSoftwareProductDto {
   @IsNotEmpty()
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
-  vendor: string;
+  @IsOptional() @IsUUID()
+  vendorId?: string;
 
   @IsOptional() @IsString()
   version?: string;
