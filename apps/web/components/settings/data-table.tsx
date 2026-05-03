@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 interface Column<T> {
   header: string;
-  accessor: keyof T | ((row: T) => string);
+  accessor: keyof T | ((row: T) => ReactNode);
 }
 
 interface DataTableProps<T extends { id: string }> {

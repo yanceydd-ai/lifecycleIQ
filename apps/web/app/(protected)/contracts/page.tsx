@@ -1,8 +1,14 @@
-export default function ContractsPage() {
+import { getContracts } from '@/lib/actions/contracts';
+import { ContractsClient } from './client';
+
+export default async function ContractsPage() {
+  const contracts = await getContracts();
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900">Contracts</h1>
-      <p className="mt-2 text-gray-500">Coming in Phase 2 — contract tracking, renewal alerts, and cancellation deadlines.</p>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Contracts</h1>
+      </div>
+      <ContractsClient initialData={contracts} />
     </div>
   );
 }

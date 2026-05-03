@@ -10,6 +10,9 @@ import { UsersModule } from './modules/users/users.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
+import { HardwareAssetsModule } from './modules/hardware-assets/hardware-assets.module';
+import { SoftwareProductsModule } from './modules/software-products/software-products.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
 
 @Module({
   imports: [
@@ -21,6 +24,9 @@ import { VendorsModule } from './modules/vendors/vendors.module';
     DepartmentsModule,
     LocationsModule,
     VendorsModule,
+    HardwareAssetsModule,
+    SoftwareProductsModule,
+    ContractsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

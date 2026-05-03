@@ -6,7 +6,7 @@ import { clsx } from 'clsx';
 import {
   LayoutDashboard,
   CheckSquare,
-  Monitor,
+  HardDrive,
   Package,
   FileText,
   TrendingUp,
@@ -19,8 +19,8 @@ import {
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Decisions', href: '/decisions', icon: CheckSquare },
-  { label: 'Assets', href: '/assets', icon: Monitor },
-  { label: 'Software', href: '/software', icon: Package },
+  { label: 'Hardware Assets', href: '/hardware-assets', icon: HardDrive },
+  { label: 'Software Products', href: '/software-products', icon: Package },
   { label: 'Contracts', href: '/contracts', icon: FileText },
   { label: 'Budget Roadmap', href: '/budget', icon: TrendingUp },
   { label: 'Scenarios', href: '/scenarios', icon: GitBranch },
