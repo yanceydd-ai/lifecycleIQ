@@ -3,16 +3,20 @@ import { NotFoundException } from '@nestjs/common';
 import { HardwareAssetsService, computeHardwareFields } from './hardware-assets.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { CsvService } from '../import-export/csv.service';
 
 const mockPrisma = {
   hardwareAsset: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
   },
+  $transaction: jest.fn(),
 };
 const mockAuditLog = { log: jest.fn() };
+const mockCsvService = { parse: jest.fn(), serialize: jest.fn() };
 
 const baseAsset = {
   id: 'hw-1',
@@ -91,6 +95,7 @@ describe('HardwareAssetsService', () => {
         HardwareAssetsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditLogService, useValue: mockAuditLog },
+        { provide: CsvService, useValue: mockCsvService },
       ],
     }).compile();
     service = module.get<HardwareAssetsService>(HardwareAssetsService);
@@ -161,6 +166,74 @@ describe('HardwareAssetsService', () => {
       );
       expect(mockAuditLog.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'DELETE', entityType: 'HardwareAsset', entityId: 'hw-1' }),
+      );
+    });
+  });
+
+  describe('importPreview', () => {
+    beforeEach(() => {
+      mockCsvService.parse.mockReturnValue([
+        { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+      ]);
+      mockPrisma.hardwareAsset.findFirst.mockResolvedValue(null);
+    });
+
+    it('returns valid row for a well-formed CSV', async () => {
+      const result = await service.importPreview('csv-string');
+      expect(result.totalRows).toBe(1);
+      expect(result.validRows).toHaveLength(1);
+      expect(result.invalidRows).toHaveLength(0);
+    });
+
+    it('flags missing required assetType', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { assetTag: 'HW-001', assetType: '', lifecycleStatus: 'active', criticality: 'medium' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors.some((e) => e.toLowerCase().includes('assettype'))).toBe(true);
+    });
+
+    it('flags invalid enum value for criticality', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'INVALID' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors.some((e) => e.toLowerCase().includes('criticality'))).toBe(true);
+    });
+
+    it('flags duplicate assetTag', async () => {
+      mockPrisma.hardwareAsset.findFirst.mockResolvedValue({ id: 'existing' });
+      const result = await service.importPreview('csv-string');
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors[0]).toBe('assetTag: already exists');
+    });
+
+    it('separates valid and invalid rows in same CSV', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+        { assetTag: 'HW-002', assetType: 'BADTYPE', lifecycleStatus: 'active', criticality: 'medium' },
+      ]);
+      mockPrisma.hardwareAsset.findFirst.mockResolvedValue(null);
+      const result = await service.importPreview('csv-string');
+      expect(result.totalRows).toBe(2);
+      expect(result.validRows).toHaveLength(1);
+      expect(result.invalidRows).toHaveLength(1);
+    });
+  });
+
+  describe('importConfirm', () => {
+    it('creates all rows in a transaction and writes audit logs', async () => {
+      const rows = [
+        { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+      ];
+      mockPrisma.$transaction.mockResolvedValue([{ ...baseAsset, id: 'hw-new' }]);
+      const result = await service.importConfirm(rows, 'actor-id');
+      expect(result.imported).toBe(1);
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockAuditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'CREATE', entityType: 'HardwareAsset' }),
       );
     });
   });

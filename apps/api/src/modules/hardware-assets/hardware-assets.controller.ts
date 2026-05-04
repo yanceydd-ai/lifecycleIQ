@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query, Res, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { AuthUser, Role } from '@lifecycleiq/shared';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -18,6 +20,23 @@ export class HardwareAssetsController {
     @Query('locationId') locationId?: string,
   ) {
     return this.service.findAll({ lifecycleStatus, assetType, departmentId, locationId });
+  }
+
+  @Post('import')
+  @Roles(Role.Admin, Role.Editor)
+  @UseInterceptors(FileInterceptor('file'))
+  async importPreview(@UploadedFile() file: Express.Multer.File) {
+    const csvString = file.buffer.toString('utf-8');
+    return this.service.importPreview(csvString);
+  }
+
+  @Post('import/confirm')
+  @Roles(Role.Admin, Role.Editor)
+  async importConfirm(
+    @Body() body: { rows: Record<string, string>[] },
+    @CurrentUser() user: AuthUser | undefined,
+  ) {
+    return this.service.importConfirm(body.rows, user!.id);
   }
 
   @Get(':id')

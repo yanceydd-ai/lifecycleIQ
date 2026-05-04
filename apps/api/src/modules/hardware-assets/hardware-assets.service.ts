@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { HardwareAsset, LifecycleStatus } from '@prisma/client';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { CsvService, ImportPreview } from '../import-export/csv.service';
 import { CreateHardwareAssetDto } from './dto/create-hardware-asset.dto';
 import { UpdateHardwareAssetDto } from './dto/update-hardware-asset.dto';
 
@@ -31,6 +34,7 @@ export class HardwareAssetsService {
   constructor(
     private prisma: PrismaService,
     private auditLog: AuditLogService,
+    private csvService: CsvService,
   ) {}
 
   async findAll(filters?: {
@@ -145,5 +149,82 @@ export class HardwareAssetsService {
       entityId: id,
     });
     return { deleted: true };
+  }
+
+  async importPreview(csvString: string): Promise<ImportPreview> {
+    const rows = this.csvService.parse(csvString);
+    const validRows: Record<string, string>[] = [];
+    const invalidRows: { rowNumber: number; data: Record<string, string>; errors: string[] }[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowErrors: string[] = [];
+
+      if (!row.assetTag) rowErrors.push('assetTag: required');
+
+      const dto = plainToInstance(CreateHardwareAssetDto, row, { enableImplicitConversion: true });
+      const validationErrors = await validate(dto);
+      for (const err of validationErrors) {
+        rowErrors.push(...Object.values(err.constraints ?? {}));
+      }
+
+      if (!rowErrors.length && row.assetTag) {
+        const existing = await this.prisma.hardwareAsset.findFirst({
+          where: { assetTag: row.assetTag },
+        });
+        if (existing) rowErrors.push('assetTag: already exists');
+      }
+
+      if (rowErrors.length > 0) {
+        invalidRows.push({ rowNumber: i + 1, data: row, errors: rowErrors });
+      } else {
+        validRows.push(row);
+      }
+    }
+
+    return { totalRows: rows.length, validRows, invalidRows };
+  }
+
+  async importConfirm(
+    rows: Record<string, string>[],
+    actorId: string,
+  ): Promise<{ imported: number }> {
+    const dtos = rows.map((row) =>
+      plainToInstance(CreateHardwareAssetDto, row, { enableImplicitConversion: true }),
+    );
+
+    const created = await this.prisma.$transaction(
+      dtos.map((dto) =>
+        this.prisma.hardwareAsset.create({
+          data: {
+            assetType: dto.assetType,
+            assetTag: dto.assetTag,
+            manufacturer: dto.manufacturer,
+            model: dto.model,
+            serialNumber: dto.serialNumber,
+            purchaseDate: dto.purchaseDate ? new Date(dto.purchaseDate) : undefined,
+            purchaseCost: dto.purchaseCost,
+            usefulLifeYears: dto.usefulLifeYears,
+            warrantyEndDate: dto.warrantyEndDate ? new Date(dto.warrantyEndDate) : undefined,
+            supportEndDate: dto.supportEndDate ? new Date(dto.supportEndDate) : undefined,
+            lifecycleStatus: dto.lifecycleStatus,
+            criticality: dto.criticality,
+            fundingType: dto.fundingType,
+            notes: dto.notes,
+          },
+        }),
+      ),
+    );
+
+    for (const asset of created) {
+      await this.auditLog.log({
+        userId: actorId,
+        action: 'CREATE',
+        entityType: 'HardwareAsset',
+        entityId: asset.id,
+      });
+    }
+
+    return { imported: created.length };
   }
 }
