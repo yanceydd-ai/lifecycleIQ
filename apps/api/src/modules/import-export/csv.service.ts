@@ -13,6 +13,7 @@ export class CsvService {
     const filtered = csvString
       .split('\n')
       .filter((line) => !line.trimStart().startsWith('#'))
+      .map((line) => line.replace(/\r$/, ''))
       .join('\n');
     const result = Papa.parse<Record<string, string>>(filtered, {
       header: true,
