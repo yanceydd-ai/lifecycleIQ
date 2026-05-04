@@ -227,4 +227,16 @@ export class HardwareAssetsService {
 
     return { imported: created.length };
   }
+
+  async exportCsv(): Promise<string> {
+    const assets = await this.findAll();
+    const columns: (keyof (typeof assets)[0])[] = [
+      'id', 'assetTag', 'assetType', 'lifecycleStatus', 'criticality',
+      'manufacturer', 'model', 'serialNumber', 'purchaseDate', 'usefulLifeYears',
+      'purchaseCost', 'warrantyEndDate', 'supportEndDate', 'notes',
+      'replacementYear', 'warrantyExpired', 'unsupported', 'highRisk',
+      'createdAt', 'updatedAt',
+    ];
+    return this.csvService.serialize(assets, columns);
+  }
 }

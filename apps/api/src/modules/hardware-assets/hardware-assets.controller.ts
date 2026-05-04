@@ -39,6 +39,16 @@ export class HardwareAssetsController {
     return this.service.importConfirm(body.rows, user!.id);
   }
 
+  @Get('export')
+  @Roles(Role.Admin, Role.Editor)
+  async exportCsv(@Res() res: Response) {
+    const csv = await this.service.exportCsv();
+    const date = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="hardware-assets-${date}.csv"`);
+    res.send(csv);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);

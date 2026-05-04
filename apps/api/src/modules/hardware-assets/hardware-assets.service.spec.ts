@@ -237,4 +237,18 @@ describe('HardwareAssetsService', () => {
       );
     });
   });
+
+  describe('exportCsv', () => {
+    it('returns a CSV string with headers including computed fields', async () => {
+      mockPrisma.hardwareAsset.findMany.mockResolvedValue([baseAsset]);
+      const csvResult = 'id,assetTag,replacementYear\nhw-1,TAG-001,2024';
+      mockCsvService.serialize.mockReturnValue(csvResult);
+      const result = await service.exportCsv();
+      expect(typeof result).toBe('string');
+      expect(mockCsvService.serialize).toHaveBeenCalled();
+      const serializeCall = mockCsvService.serialize.mock.calls[0];
+      expect(serializeCall[0][0]).toHaveProperty('replacementYear');
+      expect(serializeCall[0][0]).toHaveProperty('highRisk');
+    });
+  });
 });
