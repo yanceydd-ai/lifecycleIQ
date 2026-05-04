@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SoftwareProduct, SoftwareStatus } from '@prisma/client';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { CsvService, ImportPreview } from '../import-export/csv.service';
 import { CreateSoftwareProductDto } from './dto/create-software-product.dto';
 import { UpdateSoftwareProductDto } from './dto/update-software-product.dto';
 
@@ -32,6 +35,7 @@ export class SoftwareProductsService {
   constructor(
     private prisma: PrismaService,
     private auditLog: AuditLogService,
+    private csvService: CsvService,
   ) {}
 
   async findAll(filters?: {
@@ -120,5 +124,80 @@ export class SoftwareProductsService {
       entityId: id,
     });
     return { deleted: true };
+  }
+
+  async importPreview(csvString: string): Promise<ImportPreview> {
+    const rows = this.csvService.parse(csvString);
+    const validRows: Record<string, string>[] = [];
+    const invalidRows: { rowNumber: number; data: Record<string, string>; errors: string[] }[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const dto = plainToInstance(CreateSoftwareProductDto, row, { enableImplicitConversion: true });
+      const errors = await validate(dto);
+      if (errors.length > 0) {
+        invalidRows.push({
+          rowNumber: i + 1,
+          data: row,
+          errors: errors.flatMap((e) => Object.values(e.constraints ?? {})),
+        });
+      } else {
+        validRows.push(row);
+      }
+    }
+
+    return { totalRows: rows.length, validRows, invalidRows };
+  }
+
+  async importConfirm(
+    rows: Record<string, string>[],
+    actorId: string,
+  ): Promise<{ imported: number }> {
+    const dtos = rows.map((row) =>
+      plainToInstance(CreateSoftwareProductDto, row, { enableImplicitConversion: true }),
+    );
+
+    const created = await this.prisma.$transaction(
+      dtos.map((dto) =>
+        this.prisma.softwareProduct.create({
+          data: {
+            name: dto.name,
+            licenseModel: dto.licenseModel,
+            qtyPurchased: dto.licenseCount,
+            qtyActivelyUsed: dto.usersCount,
+            annualCost: dto.annualCost,
+            renewalDate: dto.renewalDate ? new Date(dto.renewalDate) : undefined,
+            status: dto.status,
+            recommendedAction: dto.recommendedAction,
+            notes: dto.notes,
+            departmentId: dto.departmentId,
+            vendorId: dto.vendorId,
+          },
+        }),
+      ),
+    );
+
+    for (const product of created) {
+      await this.auditLog.log({
+        userId: actorId,
+        action: 'CREATE',
+        entityType: 'SoftwareProduct',
+        entityId: product.id,
+      });
+    }
+
+    return { imported: created.length };
+  }
+
+  async exportCsv(): Promise<string> {
+    const products = await this.findAll();
+    const columns: (keyof (typeof products)[0])[] = [
+      'id', 'name', 'licenseModel', 'qtyPurchased', 'qtyActivelyUsed',
+      'unitCost', 'annualCost', 'renewalDate', 'noticePeriodDays', 'autoRenewal',
+      'status', 'recommendedAction', 'notes',
+      'utilizationRate', 'unusedLicenses', 'potentialSavings', 'lowUtilization',
+      'createdAt', 'updatedAt',
+    ];
+    return this.csvService.serialize(products, columns);
   }
 }

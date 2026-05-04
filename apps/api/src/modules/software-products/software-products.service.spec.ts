@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { SoftwareProductsService, computeUtilization } from './software-products.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { CsvService } from '../import-export/csv.service';
 
 const mockPrisma = {
   softwareProduct: {
@@ -11,8 +12,10 @@ const mockPrisma = {
     create: jest.fn(),
     update: jest.fn(),
   },
+  $transaction: jest.fn(),
 };
 const mockAuditLog = { log: jest.fn() };
+const mockCsvService = { parse: jest.fn(), serialize: jest.fn() };
 
 // Helper to create a duck-typed Prisma Decimal
 function decimal(n: number) {
@@ -139,6 +142,7 @@ describe('SoftwareProductsService', () => {
         SoftwareProductsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditLogService, useValue: mockAuditLog },
+        { provide: CsvService, useValue: mockCsvService },
       ],
     }).compile();
     service = module.get<SoftwareProductsService>(SoftwareProductsService);
@@ -228,6 +232,74 @@ describe('SoftwareProductsService', () => {
     it('throws NotFoundException when product not found', async () => {
       mockPrisma.softwareProduct.findUnique.mockResolvedValue(null);
       await expect(service.remove('missing', 'actor')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('importPreview', () => {
+    beforeEach(() => {
+      mockCsvService.parse.mockReturnValue([
+        { name: 'Microsoft 365', licenseModel: 'per_user', licenseCount: '50', usersCount: '42' },
+      ]);
+    });
+
+    it('returns valid row for a well-formed CSV', async () => {
+      const result = await service.importPreview('csv-string');
+      expect(result.totalRows).toBe(1);
+      expect(result.validRows).toHaveLength(1);
+      expect(result.invalidRows).toHaveLength(0);
+    });
+
+    it('flags missing required name', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { name: '', licenseModel: 'per_user' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors.some((e) => e.toLowerCase().includes('name'))).toBe(true);
+    });
+
+    it('flags invalid licenseModel enum', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { name: 'App', licenseModel: 'INVALID' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors.some((e) => e.toLowerCase().includes('licensemodel'))).toBe(true);
+    });
+
+    it('separates valid and invalid rows', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { name: 'App A', licenseModel: 'per_user' },
+        { name: '', licenseModel: 'per_user' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.validRows).toHaveLength(1);
+      expect(result.invalidRows).toHaveLength(1);
+    });
+  });
+
+  describe('importConfirm', () => {
+    it('creates rows in a transaction and writes audit logs', async () => {
+      const rows = [{ name: 'Microsoft 365', licenseModel: 'per_user' }];
+      mockPrisma.$transaction.mockResolvedValue([{ ...baseProduct, id: 'sw-new' }]);
+      const result = await service.importConfirm(rows, 'actor-id');
+      expect(result.imported).toBe(1);
+      expect(mockAuditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'CREATE', entityType: 'SoftwareProduct' }),
+      );
+    });
+  });
+
+  describe('exportCsv', () => {
+    it('returns a CSV string with computed utilization fields', async () => {
+      mockPrisma.softwareProduct.findMany.mockResolvedValue([baseProduct]);
+      const csvResult = 'id,name,utilizationRate\nsw-1,Microsoft 365,0.8';
+      mockCsvService.serialize.mockReturnValue(csvResult);
+      const result = await service.exportCsv();
+      expect(typeof result).toBe('string');
+      const serializeCall = mockCsvService.serialize.mock.calls[0];
+      expect(serializeCall[0][0]).toHaveProperty('utilizationRate');
+      expect(serializeCall[0][0]).toHaveProperty('lowUtilization');
     });
   });
 });
