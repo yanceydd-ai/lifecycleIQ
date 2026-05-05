@@ -1,0 +1,7 @@
+# licenseModel: per_user|per_device|site_license|fte_based|concurrent_user|consumption_based|flat_annual|multi_year_agreement|other
+# status: active|trial|under_review|renewal_pending|sunset_planned|replaced|terminated (optional)
+# recommendedAction: renew_as_is|renew_with_reduction|expand|renegotiate|replace|consolidate|terminate|monitor|escalate (optional)
+# licenseCount = number of licenses purchased. usersCount = actively used.
+# Dates must be YYYY-MM-DD format.
+name,licenseModel,licenseCount,usersCount,annualCost,renewalDate,status,notes
+Microsoft 365,per_user,50,42,9000.00,2026-12-31,active,Example row — delete before upload

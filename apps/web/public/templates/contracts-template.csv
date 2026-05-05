@@ -1,0 +1,4 @@
+# contractType: software_subscription|saas_agreement|hardware_support|maintenance_agreement|managed_service|telecom|internet_circuit|cloud_service|professional_service|warranty|other
+# Dates must be YYYY-MM-DD format. Remove comment rows before uploading.
+name,contractType,vendorName,startDate,endDate,renewalDate,annualCost,approvalStatus,notes
+Microsoft 365 Support,software_subscription,Microsoft,2024-01-01,2025-12-31,2025-11-01,9000.00,approved,Example row — delete before upload

@@ -1,0 +1,7 @@
+# assetType: laptop|desktop|tablet|server|storage|network_switch|wireless_access_point|firewall|ups|printer|mfp_copier|classroom_display|projector|av_equipment|phone|camera|iot_device|other
+# lifecycleStatus: planned|ordered|active|spare|in_repair|due_for_replacement|deferred|retired|disposed
+# criticality: low|medium|high|mission_critical
+# fundingType: opex|capex (optional)
+# Dates must be YYYY-MM-DD format. Remove comment rows before uploading.
+assetTag,assetType,lifecycleStatus,criticality,manufacturer,model,serialNumber,purchaseDate,usefulLifeYears,purchaseCost,warrantyEndDate,supportEndDate,notes
+HW-001,laptop,active,medium,Dell,Latitude 7420,SN12345,2022-01-15,4,1200.00,2025-01-15,,Example row — delete before upload
