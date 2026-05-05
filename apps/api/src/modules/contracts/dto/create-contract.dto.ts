@@ -9,6 +9,7 @@ import {
   IsUUID,
   IsBoolean,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ContractType, ApprovalStatus } from '@prisma/client';
 
 export class CreateContractDto {
@@ -41,6 +42,11 @@ export class CreateContractDto {
   noticePeriodDays?: number;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   autoRenewal?: boolean;
 

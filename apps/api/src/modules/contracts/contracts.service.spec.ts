@@ -3,6 +3,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ContractsService, computeContractDeadlines } from './contracts.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { CsvService } from '../import-export/csv.service';
 
 const mockPrisma = {
   contract: {
@@ -12,8 +13,10 @@ const mockPrisma = {
     update: jest.fn(),
     delete: jest.fn(),
   },
+  $transaction: jest.fn(),
 };
 const mockAuditLog = { log: jest.fn() };
+const mockCsvService = { parse: jest.fn(), serialize: jest.fn() };
 
 const baseContract = {
   id: 'c-1',
@@ -141,6 +144,7 @@ describe('ContractsService', () => {
         ContractsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditLogService, useValue: mockAuditLog },
+        { provide: CsvService, useValue: mockCsvService },
       ],
     }).compile();
     service = module.get<ContractsService>(ContractsService);
@@ -251,6 +255,72 @@ describe('ContractsService', () => {
     it('throws NotFoundException when contract not found', async () => {
       mockPrisma.contract.findUnique.mockResolvedValue(null);
       await expect(service.remove('missing', 'actor')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('importPreview', () => {
+    beforeEach(() => {
+      mockCsvService.parse.mockReturnValue([
+        { name: 'Microsoft EA', contractType: 'software_subscription', endDate: '2026-12-31', noticePeriodDays: '60', autoRenewal: 'false' },
+      ]);
+    });
+
+    it('returns valid row for a well-formed CSV', async () => {
+      const result = await service.importPreview('csv-string');
+      expect(result.totalRows).toBe(1);
+      expect(result.validRows).toHaveLength(1);
+      expect(result.invalidRows).toHaveLength(0);
+    });
+
+    it('flags missing required name', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { name: '', contractType: 'software_subscription' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors.some((e) => e.toLowerCase().includes('name'))).toBe(true);
+    });
+
+    it('flags invalid contractType enum', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { name: 'Contract A', contractType: 'INVALID' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors.some((e) => e.toLowerCase().includes('contracttype'))).toBe(true);
+    });
+
+    it('coerces autoRenewal string to boolean', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { name: 'Contract B', contractType: 'maintenance_agreement', autoRenewal: 'true' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.validRows).toHaveLength(1);
+    });
+  });
+
+  describe('importConfirm', () => {
+    it('creates rows in a transaction and writes audit logs', async () => {
+      const rows = [{ name: 'Microsoft EA', contractType: 'enterprise_agreement' }];
+      mockPrisma.$transaction.mockResolvedValue([{ ...baseContract, id: 'ct-new' }]);
+      const result = await service.importConfirm(rows, 'actor-id');
+      expect(result.imported).toBe(1);
+      expect(mockAuditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'CREATE', entityType: 'Contract' }),
+      );
+    });
+  });
+
+  describe('exportCsv', () => {
+    it('returns a CSV string with computed deadline fields', async () => {
+      mockPrisma.contract.findMany.mockResolvedValue([baseContract]);
+      const csvResult = 'id,name,daysUntilRenewal\nct-1,Microsoft EA,200';
+      mockCsvService.serialize.mockReturnValue(csvResult);
+      const result = await service.exportCsv();
+      expect(typeof result).toBe('string');
+      const serializeCall = mockCsvService.serialize.mock.calls[0];
+      expect(serializeCall[0][0]).toHaveProperty('daysUntilRenewal');
+      expect(serializeCall[0][0]).toHaveProperty('urgency');
     });
   });
 });

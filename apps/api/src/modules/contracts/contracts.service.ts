@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Contract, ContractType, ApprovalStatus } from '@prisma/client';
 import { subDays, differenceInDays } from 'date-fns';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { CsvService, ImportPreview } from '../import-export/csv.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 
@@ -34,6 +37,7 @@ export class ContractsService {
   constructor(
     private prisma: PrismaService,
     private auditLog: AuditLogService,
+    private csvService: CsvService,
   ) {}
 
   async findAll(filters?: {
@@ -129,5 +133,79 @@ export class ContractsService {
       entityId: id,
     });
     return { deleted: true };
+  }
+
+  async importPreview(csvString: string): Promise<ImportPreview> {
+    const rows = this.csvService.parse(csvString);
+    const validRows: Record<string, string>[] = [];
+    const invalidRows: { rowNumber: number; data: Record<string, string>; errors: string[] }[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const dto = plainToInstance(CreateContractDto, row, { enableImplicitConversion: true });
+      const errors = await validate(dto);
+      if (errors.length > 0) {
+        invalidRows.push({
+          rowNumber: i + 1,
+          data: row,
+          errors: errors.flatMap((e) => Object.values(e.constraints ?? {})),
+        });
+      } else {
+        validRows.push(row);
+      }
+    }
+
+    return { totalRows: rows.length, validRows, invalidRows };
+  }
+
+  async importConfirm(
+    rows: Record<string, string>[],
+    actorId: string,
+  ): Promise<{ imported: number }> {
+    const dtos = rows.map((row) =>
+      plainToInstance(CreateContractDto, row, { enableImplicitConversion: true }),
+    );
+
+    const created = await this.prisma.$transaction(
+      dtos.map((dto) =>
+        this.prisma.contract.create({
+          data: {
+            name: dto.name,
+            contractType: dto.contractType as ContractType,
+            startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+            endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+            noticePeriodDays: dto.noticePeriodDays,
+            autoRenewal: dto.autoRenewal,
+            annualCost: dto.annualCost,
+            approvalStatus: dto.approvalStatus as ApprovalStatus,
+            departmentId: dto.departmentId,
+            notes: dto.notes,
+          },
+        }),
+      ),
+    );
+
+    for (const contract of created) {
+      await this.auditLog.log({
+        userId: actorId,
+        action: 'CREATE',
+        entityType: 'Contract',
+        entityId: contract.id,
+      });
+    }
+
+    return { imported: created.length };
+  }
+
+  async exportCsv(): Promise<string> {
+    const contracts = await this.findAll();
+    const columns: (keyof (typeof contracts)[0])[] = [
+      'id', 'name', 'contractType', 'vendorId', 'softwareProductId',
+      'startDate', 'endDate', 'noticePeriodDays', 'autoRenewal',
+      'annualCost', 'approvalStatus', 'notes',
+      'cancellationDeadline', 'daysUntilRenewal', 'urgency',
+      'createdAt', 'updatedAt',
+    ];
+    return this.csvService.serialize(contracts, columns);
   }
 }
