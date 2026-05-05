@@ -7,6 +7,7 @@ import {
   updateSoftwareProduct,
   deleteSoftwareProduct,
 } from '@/lib/actions/software-products';
+import { exportRecords } from '@/lib/actions/import-export';
 import type { SoftwareProduct } from '@lifecycleiq/shared';
 
 interface Props {
@@ -29,6 +30,7 @@ export function SoftwareProductsClient({ initialData }: Props) {
   const [editing, setEditing] = useState<SoftwareProduct | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [exporting, setExporting] = useState(false);
 
   // Form fields
   const [name, setName] = useState('');
@@ -101,9 +103,34 @@ export function SoftwareProductsClient({ initialData }: Props) {
     });
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const csv = await exportRecords('software-products');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `software-products-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 disabled:opacity-50"
+        >
+          {exporting ? 'Downloading…' : '↓ Download CSV'}
+        </button>
         <button
           onClick={openCreate}
           className="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-700"
