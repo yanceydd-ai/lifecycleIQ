@@ -26,6 +26,9 @@ export class CreateHardwareAssetDto {
   @IsOptional() @IsNumberString()
   replacementCost?: string;
 
+  @IsOptional() @IsNumberString()
+  annualMaintenanceCost?: string;
+
   @IsOptional() @IsInt()
   usefulLifeYears?: number;
 
