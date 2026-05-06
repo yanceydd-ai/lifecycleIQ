@@ -7,3 +7,4 @@ export * from './types/audit-log';
 export * from './types/hardware-asset';
 export * from './types/software-product';
 export * from './types/contract';
+export * from './types/budget';
