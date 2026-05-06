@@ -107,12 +107,12 @@ export class BudgetService {
 
   async updateSettings(dto: UpdateFiscalYearSettingsDto) {
     const existing = await this.getSettings();
+    const data = Object.fromEntries(
+      Object.entries(dto).filter(([, v]) => v !== undefined),
+    );
     return this.prisma.fiscalYearSettings.update({
       where: { id: existing.id },
-      data: {
-        fiscalYearStartMonth: dto.fiscalYearStartMonth,
-        defaultEscalationRate: dto.defaultEscalationRate,
-      },
+      data,
     });
   }
 

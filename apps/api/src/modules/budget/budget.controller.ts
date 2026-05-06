@@ -10,7 +10,8 @@ export class BudgetController {
 
   @Get('forecast')
   getForecast(@Query('years') years?: string) {
-    return this.service.getForecast(years ? parseInt(years, 10) : 7);
+    const n = years ? parseInt(years, 10) : 7;
+    return this.service.getForecast(!isNaN(n) && n >= 1 ? n : 7);
   }
 
   @Get('settings')
