@@ -50,6 +50,7 @@ export function HardwareAssetsClient({ initialData }: Props) {
   const [lifecycleStatus, setLifecycleStatus] = useState('active');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [usefulLifeYears, setUsefulLifeYears] = useState('');
+  const [annualMaintenanceCost, setAnnualMaintenanceCost] = useState('');
 
   function openCreate() {
     setEditing(null);
@@ -60,6 +61,7 @@ export function HardwareAssetsClient({ initialData }: Props) {
     setLifecycleStatus('active');
     setPurchaseDate('');
     setUsefulLifeYears('');
+    setAnnualMaintenanceCost('');
     setShowForm(true);
   }
 
@@ -76,6 +78,7 @@ export function HardwareAssetsClient({ initialData }: Props) {
         : '',
     );
     setUsefulLifeYears(row.usefulLifeYears?.toString() ?? '');
+    setAnnualMaintenanceCost((row as any).annualMaintenanceCost?.toString() ?? '');
     setShowForm(true);
   }
 
@@ -90,6 +93,7 @@ export function HardwareAssetsClient({ initialData }: Props) {
         lifecycleStatus: lifecycleStatus || undefined,
         purchaseDate: purchaseDate || undefined,
         usefulLifeYears: usefulLifeYears ? parseInt(usefulLifeYears, 10) : undefined,
+        annualMaintenanceCost: annualMaintenanceCost || undefined,
       };
       if (editing) {
         const updated = await updateHardwareAsset(editing.id, payload);
@@ -244,6 +248,20 @@ export function HardwareAssetsClient({ initialData }: Props) {
                   className="w-full rounded-md border-gray-300 text-sm"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Annual Maintenance Cost
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={annualMaintenanceCost}
+                onChange={(e) => setAnnualMaintenanceCost(e.target.value)}
+                className="w-full rounded-md border-gray-300 text-sm"
+                placeholder="0.00"
+              />
             </div>
             <div className="flex gap-2 pt-2">
               <button
