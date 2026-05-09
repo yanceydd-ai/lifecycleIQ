@@ -321,7 +321,7 @@ model DecisionHistory {
   previousAction String?  @map("previous_action")
   newAction      String   @map("new_action")
   rationale      String
-  userId         String   @map("user_id")
+  userId         String   @map("user_id") // soft reference — no FK, consistent with AuditLog pattern
   createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("decision_history")
