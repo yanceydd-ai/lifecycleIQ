@@ -1,7 +1,7 @@
 'use client';
 
 import { BudgetClient } from '../budget/client';
-import type { ForecastYear, Alert, Recommendation } from '@lifecycleiq/shared';
+import type { ForecastYear, Alert, Recommendation, AlertSeverity, RecommendedActionType } from '@lifecycleiq/shared';
 
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
@@ -17,6 +17,18 @@ const ENTITY_LABELS: Record<string, string> = {
   software_product: 'Software',
   contract: 'Contract',
 };
+
+type Urgency = AlertSeverity | 'medium';
+
+interface DecisionRow {
+  key: string;
+  name: string;
+  type: string;
+  issue: string;
+  urgency: Urgency;
+  dueDate: string | null;
+  action: RecommendedActionType | null;
+}
 
 interface Props {
   forecast: ForecastYear[];
@@ -36,31 +48,34 @@ export function DashboardClient({ forecast, alerts, recommendations }: Props) {
     return `$${n}`;
   }
 
-  const alertRows = alerts
+  const scoreToUrgency = (score: number): Urgency =>
+    score >= 85 ? 'critical' : score >= 70 ? 'high' : 'medium';
+
+  const alertRows: DecisionRow[] = alerts
     .filter(a => a.severity === 'critical' || a.severity === 'high')
     .map(a => ({
       key: a.id,
       name: a.entityName,
       type: ENTITY_LABELS[a.entityType] ?? a.entityType,
       issue: a.message,
-      urgency: a.severity as string,
+      urgency: a.severity,
       dueDate: a.dueDate,
-      action: null as string | null,
+      action: null,
     }));
 
-  const recRows = recommendations
+  const recRows: DecisionRow[] = recommendations
     .filter(r => r.score >= 50)
     .map(r => ({
       key: `rec-${r.entityType}-${r.entityId}`,
       name: r.entityName,
       type: ENTITY_LABELS[r.entityType] ?? r.entityType,
       issue: r.explanation.length > 80 ? r.explanation.slice(0, 77) + '…' : r.explanation,
-      urgency: r.score >= 85 ? 'critical' : r.score >= 70 ? 'high' : 'medium',
-      dueDate: null as string | null,
-      action: r.recommendedAction as string | null,
+      urgency: scoreToUrgency(r.score),
+      dueDate: null,
+      action: r.recommendedAction,
     }));
 
-  const allRows = [
+  const allRows: DecisionRow[] = [
     ...alertRows.sort((a, b) => (SEVERITY_ORDER[a.urgency] ?? 9) - (SEVERITY_ORDER[b.urgency] ?? 9)),
     ...recRows,
   ].slice(0, 15);
