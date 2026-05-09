@@ -53,7 +53,7 @@ function computeHardwareRec(
   );
 
   let recommendedAction: RecommendedActionType = 'monitor';
-  if (securityRisk === 100 && asset.criticality === 'mission_critical') recommendedAction = 'replace';
+  if (asset.unsupported && asset.criticality === 'mission_critical') recommendedAction = 'replace';
   else if (lifecycleRisk === 100) recommendedAction = 'replace';
   else if (asset.lifecycleStatus === 'due_for_replacement') recommendedAction = 'replace';
   else if (asset.lifecycleStatus === 'spare' && score < 30) recommendedAction = 'retire';

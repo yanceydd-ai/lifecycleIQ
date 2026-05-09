@@ -90,6 +90,18 @@ describe('computeRecommendation — hardware', () => {
     const result = computeRecommendation('hardware_asset', asset, TODAY);
     expect(result.explanation.length).toBeGreaterThan(10);
   });
+
+  it('recommendedAction=retire when lifecycleStatus=spare and score < 30', () => {
+    const asset = mockHardware({
+      lifecycleStatus: 'spare',
+      criticality: 'low',
+      replacementYear: CURRENT_YEAR + 5,
+      purchaseCost: dec(200),
+    });
+    const result = computeRecommendation('hardware_asset', asset, TODAY);
+    expect(result.score).toBeLessThan(30);
+    expect(result.recommendedAction).toBe('retire');
+  });
 });
 
 describe('computeRecommendation — software', () => {
