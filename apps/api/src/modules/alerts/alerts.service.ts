@@ -7,6 +7,7 @@ function diffDays(target: Date, from: Date): number {
   return Math.ceil((target.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+// Severity thresholds (days until due): critical <30, high <60, medium <90, low ≤120
 function severity(days: number): AlertSeverity {
   if (days < 30) return 'critical';
   if (days < 60) return 'high';
@@ -213,6 +214,7 @@ export class AlertsService {
     if (params?.entityType) alerts = alerts.filter(a => a.entityType === params.entityType);
     if (params?.severity) alerts = alerts.filter(a => a.severity === params.severity);
     if (params?.days !== undefined) {
+      // null daysUntilDue = standing risk alerts (no deadline); always surfaced regardless of days filter
       alerts = alerts.filter(a => a.daysUntilDue === null || a.daysUntilDue <= params.days!);
     }
 
