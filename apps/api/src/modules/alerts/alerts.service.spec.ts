@@ -136,4 +136,42 @@ describe('computeAlerts', () => {
     expect(alerts[0].severity).toBe('critical');
     expect(alerts[1].severity).toBe('high');
   });
+
+  it('produces support_ending alert when supportEndDate within 120 days', () => {
+    const asset = mockAsset({ supportEndDate: daysOut(50) });
+    const alerts = computeAlerts([asset], [], [], TODAY);
+    expect(alerts.some(a => a.alertType === 'support_ending')).toBe(true);
+    expect(alerts.find(a => a.alertType === 'support_ending')!.severity).toBe('high');
+  });
+
+  it('sets severity=medium when date is 60-89 days out', () => {
+    const asset = mockAsset({ warrantyEndDate: daysOut(75) });
+    const alerts = computeAlerts([asset], [], [], TODAY);
+    expect(alerts.find(a => a.alertType === 'warranty_expiring')!.severity).toBe('medium');
+  });
+
+  it('sets severity=low when date is 90-120 days out', () => {
+    const asset = mockAsset({ warrantyEndDate: daysOut(100) });
+    const alerts = computeAlerts([asset], [], [], TODAY);
+    expect(alerts.find(a => a.alertType === 'warranty_expiring')!.severity).toBe('low');
+  });
+
+  it('excludes replaced software from all alert checks', () => {
+    const sw = mockSoftware({ status: 'replaced', renewalDate: daysOut(10), autoRenewal: true });
+    expect(computeAlerts([], [sw], [], TODAY)).toHaveLength(0);
+  });
+
+  it('produces cancellation_deadline for contract from renewalDate minus noticePeriodDays', () => {
+    const contract = mockContract({ renewalDate: daysOut(40), noticePeriodDays: 30 });
+    const alerts = computeAlerts([], [], [contract], TODAY);
+    const alert = alerts.find(a => a.alertType === 'cancellation_deadline')!;
+    expect(alert).toBeDefined();
+    expect(alert.daysUntilDue).toBe(10);
+  });
+
+  it('produces auto_renewal_unreviewed for contract when autoRenewal=true and no recommendedAction', () => {
+    const contract = mockContract({ autoRenewal: true, recommendedAction: null });
+    const alerts = computeAlerts([], [], [contract], TODAY);
+    expect(alerts.some(a => a.alertType === 'auto_renewal_unreviewed' && a.entityType === 'contract')).toBe(true);
+  });
 });
