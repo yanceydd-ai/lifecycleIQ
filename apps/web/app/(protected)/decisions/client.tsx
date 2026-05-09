@@ -47,19 +47,27 @@ function OverrideDialog({ item, onClose }: OverrideDialogProps) {
   const [rationale, setRationale] = useState('');
   const [history, setHistory] = useState<DecisionHistory[] | null>(null);
   const [pending, startTransition] = useTransition();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    getDecisionHistory(item.entityType, item.entityId).then(setHistory);
+    getDecisionHistory(item.entityType, item.entityId)
+      .then(setHistory)
+      .catch(() => setHistory([]));
   }, [item.entityType, item.entityId]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (rationale.length < 10) return;
     const input: UpdateRecommendationInput = { newAction, rationale };
+    setSubmitError(null);
     startTransition(async () => {
-      await overrideRecommendation(item.entityType, item.entityId, input);
-      onClose();
-      router.refresh();
+      try {
+        await overrideRecommendation(item.entityType, item.entityId, input);
+        onClose();
+        router.refresh();
+      } catch {
+        setSubmitError('Failed to save override. Please try again.');
+      }
     });
   }
 
@@ -80,7 +88,12 @@ function OverrideDialog({ item, onClose }: OverrideDialogProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">New Action</label>
             <select
               value={newAction}
-              onChange={e => setNewAction(e.target.value as RecommendedActionType)}
+              onChange={e => {
+                const v = e.target.value;
+                if (ACTION_OPTIONS.some(o => o.value === v)) {
+                  setNewAction(v as RecommendedActionType);
+                }
+              }}
               className="w-full rounded-md border-gray-300 text-sm"
             >
               {ACTION_OPTIONS.map(o => (
@@ -118,6 +131,10 @@ function OverrideDialog({ item, onClose }: OverrideDialogProps) {
                 ))}
               </div>
             </div>
+          )}
+
+          {submitError && (
+            <p className="text-xs text-red-600">{submitError}</p>
           )}
 
           <div className="flex gap-3 pt-2">
