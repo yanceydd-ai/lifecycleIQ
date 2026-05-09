@@ -2,10 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { apiServer } from '@/lib/api';
-import type { Recommendation, DecisionHistory, UpdateRecommendationInput } from '@lifecycleiq/shared';
+import type { Recommendation, DecisionHistory, UpdateRecommendationInput, RecommendationEntityType } from '@lifecycleiq/shared';
 
 export async function getRecommendations(params?: {
-  entityType?: string;
+  entityType?: RecommendationEntityType;
   minScore?: number;
 }): Promise<Recommendation[]> {
   const qs = new URLSearchParams();
@@ -15,12 +15,12 @@ export async function getRecommendations(params?: {
   return apiServer(`/api/v1/recommendations${query ? `?${query}` : ''}`);
 }
 
-export async function getRecommendation(entityType: string, id: string): Promise<Recommendation> {
+export async function getRecommendation(entityType: RecommendationEntityType, id: string): Promise<Recommendation> {
   return apiServer(`/api/v1/recommendations/${entityType}/${id}`);
 }
 
 export async function overrideRecommendation(
-  entityType: string,
+  entityType: RecommendationEntityType,
   id: string,
   input: UpdateRecommendationInput,
 ): Promise<DecisionHistory> {
@@ -34,7 +34,7 @@ export async function overrideRecommendation(
 }
 
 export async function getDecisionHistory(
-  entityType: string,
+  entityType: RecommendationEntityType,
   id: string,
 ): Promise<DecisionHistory[]> {
   return apiServer(`/api/v1/recommendations/history/${entityType}/${id}`);

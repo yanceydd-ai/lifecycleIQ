@@ -1,11 +1,11 @@
 'use server';
 
 import { apiServer } from '@/lib/api';
-import type { Alert } from '@lifecycleiq/shared';
+import type { Alert, AlertSeverity, AlertEntityType } from '@lifecycleiq/shared';
 
 export async function getAlerts(params?: {
-  entityType?: string;
-  severity?: string;
+  entityType?: AlertEntityType;
+  severity?: AlertSeverity;
   days?: number;
 }): Promise<Alert[]> {
   const qs = new URLSearchParams();
