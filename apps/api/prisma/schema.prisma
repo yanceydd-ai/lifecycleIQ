@@ -89,6 +89,8 @@ enum RecommendedAction {
   expand
   renegotiate
   replace
+  retire
+  defer
   consolidate
   terminate
   monitor
@@ -205,6 +207,7 @@ model HardwareAsset {
   purchaseCost            Decimal?        @map("purchase_cost") @db.Decimal(12, 2)
   replacementCost         Decimal?        @map("replacement_cost") @db.Decimal(12, 2)
   annualMaintenanceCost   Decimal?        @map("annual_maintenance_cost") @db.Decimal(12, 2)
+  recommendedAction       RecommendedAction? @map("recommended_action")
   usefulLifeYears         Int?            @map("useful_life_years")
   replacementYearOverride Int?            @map("replacement_year_override")
   warrantyEndDate         DateTime?       @map("warranty_end_date")
@@ -294,6 +297,7 @@ model Contract {
   technicalOwner               String?          @map("technical_owner")
   budgetOwner                  String?          @map("budget_owner")
   notes                        String?
+  recommendedAction            RecommendedAction? @map("recommended_action")
   createdAt                    DateTime         @default(now()) @map("created_at")
   updatedAt                    DateTime         @updatedAt @map("updated_at")
 
@@ -308,4 +312,17 @@ model FiscalYearSettings {
   updatedAt             DateTime @updatedAt @map("updated_at")
 
   @@map("fiscal_year_settings")
+}
+
+model DecisionHistory {
+  id             String   @id @default(uuid())
+  entityType     String   @map("entity_type")
+  entityId       String   @map("entity_id")
+  previousAction String?  @map("previous_action")
+  newAction      String   @map("new_action")
+  rationale      String
+  userId         String   @map("user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("decision_history")
 }
