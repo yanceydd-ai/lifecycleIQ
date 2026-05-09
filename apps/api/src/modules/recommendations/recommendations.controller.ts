@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
-import { AuthUser } from '@lifecycleiq/shared';
+import { AuthUser, Role } from '@lifecycleiq/shared';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { RecommendationsService } from './recommendations.service';
 import { UpdateRecommendationDto } from './dto/update-recommendation.dto';
 
@@ -37,6 +38,7 @@ export class RecommendationsController {
   }
 
   @Post(':entityType/:id/override')
+  @Roles(Role.Admin, Role.Editor)
   override(
     @Param('entityType') entityType: string,
     @Param('id', ParseUUIDPipe) id: string,

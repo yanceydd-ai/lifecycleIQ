@@ -3,7 +3,7 @@ import { RecommendedAction } from '@prisma/client';
 
 export class UpdateRecommendationDto {
   @IsEnum(RecommendedAction)
-  newAction: string;
+  newAction: RecommendedAction;
 
   @IsString()
   @MinLength(10)

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SoftwareProduct, Contract } from '@prisma/client';
+import { SoftwareProduct, Contract, RecommendedAction } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { computeHardwareFields, HardwareAssetWithComputed } from '../hardware-assets/hardware-assets.service';
@@ -164,10 +164,10 @@ function computeContractRec(
   const financialUrgency = annualCost > 50000 ? 100 : annualCost > 10000 ? 75 : annualCost > 1000 ? 50 : 25;
 
   const score = Math.round(
-    50 * 0.30 +
+    50 * 0.30 +       // no criticality field on contracts — neutral mid-point
     lifecycleRisk * 0.25 +
     securityRisk * 0.20 +
-    50 * 0.15 +
+    50 * 0.15 +       // no utilization concept for contracts — neutral mid-point
     financialUrgency * 0.10,
   );
 
@@ -266,7 +266,7 @@ export class RecommendationsService {
   async override(
     entityType: string,
     id: string,
-    dto: { newAction: string; rationale: string },
+    dto: { newAction: RecommendedAction; rationale: string },
     userId: string,
   ) {
     let previousAction: string | null = null;
@@ -274,15 +274,15 @@ export class RecommendationsService {
     if (entityType === 'hardware_asset') {
       const existing = await this.prisma.hardwareAsset.findUniqueOrThrow({ where: { id } });
       previousAction = existing.recommendedAction ?? null;
-      await this.prisma.hardwareAsset.update({ where: { id }, data: { recommendedAction: dto.newAction as any } });
+      await this.prisma.hardwareAsset.update({ where: { id }, data: { recommendedAction: dto.newAction } });
     } else if (entityType === 'software_product') {
       const existing = await this.prisma.softwareProduct.findUniqueOrThrow({ where: { id } });
       previousAction = existing.recommendedAction ?? null;
-      await this.prisma.softwareProduct.update({ where: { id }, data: { recommendedAction: dto.newAction as any } });
+      await this.prisma.softwareProduct.update({ where: { id }, data: { recommendedAction: dto.newAction } });
     } else {
       const existing = await this.prisma.contract.findUniqueOrThrow({ where: { id } });
       previousAction = existing.recommendedAction ?? null;
-      await this.prisma.contract.update({ where: { id }, data: { recommendedAction: dto.newAction as any } });
+      await this.prisma.contract.update({ where: { id }, data: { recommendedAction: dto.newAction } });
     }
 
     const history = await this.prisma.decisionHistory.create({
