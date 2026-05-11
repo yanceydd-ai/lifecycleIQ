@@ -249,4 +249,23 @@ describe('ScenariosService', () => {
       expect(mockPrisma.scenarioOverride.delete).toHaveBeenCalledWith({ where: { id: 'ov-1', scenarioId: 'sc-1' } });
     });
   });
+
+  describe('create', () => {
+    it('creates a custom scenario with type custom and isSystem false', async () => {
+      const fakeScenario = {
+        id: 'sc-new', name: 'My Plan', type: 'custom',
+        escalationRate: { toNumber: () => 0.03 }, isSystem: false,
+        isRecommended: false, createdBy: 'user-1',
+        overrides: [], createdAt: new Date(), updatedAt: new Date(),
+      };
+      mockPrisma.scenario.create.mockResolvedValue(fakeScenario);
+      const result = await service.create({ name: 'My Plan', escalationRate: 0.03 }, 'user-1');
+      expect(mockPrisma.scenario.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ name: 'My Plan', type: 'custom', isSystem: false }),
+        }),
+      );
+      expect(result.name).toBe('My Plan');
+    });
+  });
 });

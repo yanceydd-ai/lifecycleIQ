@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { upsertScenarioOverride, deleteScenarioOverride } from '@/lib/actions/scenarios';
+import { upsertScenarioOverride, deleteScenarioOverride, updateScenario } from '@/lib/actions/scenarios';
 import type {
   Scenario,
   ScenarioOverride,
@@ -32,6 +32,36 @@ export function ScenarioEditorClient({ scenario, assets, software, contracts }: 
   const [tab, setTab] = useState<Tab>('hardware');
   const [overrideMap, setOverrideMap] = useState(() => buildOverrideMap(scenario.overrides));
   const [, startTransition] = useTransition();
+
+  const [scenarioName, setScenarioName] = useState(scenario.name);
+  const [escalationRatePct, setEscalationRatePct] = useState(
+    (Number(scenario.escalationRate) * 100).toFixed(1)
+  );
+  const [isRecommended, setIsRecommended] = useState(scenario.isRecommended);
+
+  function handleNameBlur() {
+    if (scenarioName.trim() && scenarioName.trim() !== scenario.name) {
+      startTransition(async () => {
+        await updateScenario(scenario.id, { name: scenarioName.trim() });
+      });
+    }
+  }
+
+  function handleRateBlur() {
+    const rate = parseFloat(escalationRatePct) / 100;
+    if (!isNaN(rate) && rate !== Number(scenario.escalationRate)) {
+      startTransition(async () => {
+        await updateScenario(scenario.id, { escalationRate: rate });
+      });
+    }
+  }
+
+  function handleRecommendedToggle(checked: boolean) {
+    setIsRecommended(checked);
+    startTransition(async () => {
+      await updateScenario(scenario.id, { isRecommended: checked });
+    });
+  }
 
   function getOverride(entityType: string, entityId: string, overrideType: OverrideType): string {
     return overrideMap.get(`${entityType}:${entityId}:${overrideType}`)?.value ?? '';
@@ -69,16 +99,58 @@ export function ScenarioEditorClient({ scenario, assets, software, contracts }: 
   return (
     <div className="space-y-6">
       {/* Scenario settings header */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-6">
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Escalation Rate</p>
-          <p className="font-semibold text-gray-900">{(Number(scenario.escalationRate) * 100).toFixed(1)}%</p>
+      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-6 flex-wrap">
+        {scenario.isSystem ? (
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Name</p>
+            <p className="font-semibold text-gray-900">{scenario.name}</p>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <input
+              value={scenarioName}
+              onChange={e => setScenarioName(e.target.value)}
+              onBlur={handleNameBlur}
+              className="rounded border-gray-300 text-sm font-semibold"
+            />
+          </div>
+        )}
+        {scenario.isSystem ? (
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Escalation Rate</p>
+            <p className="font-semibold text-gray-900">{escalationRatePct}%</p>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Escalation Rate (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={escalationRatePct}
+              onChange={e => setEscalationRatePct(e.target.value)}
+              onBlur={handleRateBlur}
+              className="w-24 rounded border-gray-300 text-sm font-semibold"
+            />
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="recommended"
+            checked={isRecommended}
+            onChange={e => handleRecommendedToggle(e.target.checked)}
+            className="rounded"
+          />
+          <label htmlFor="recommended" className="text-sm text-gray-700">Mark as Recommended</label>
         </div>
         <div>
           <p className="text-xs text-gray-500 mb-1">Overrides</p>
           <p className="font-semibold text-gray-900">{overrideMap.size}</p>
         </div>
-        {scenario.isSystem && <p className="text-xs text-gray-400">System scenario</p>}
+        {scenario.isSystem && <p className="text-xs text-gray-400">🔒 System scenario</p>}
         <a href={`/scenarios/${scenario.id}/compare`} className="ml-auto px-3 py-1.5 text-sm bg-slate-900 text-white rounded-md">
           View Comparison →
         </a>
@@ -111,6 +183,7 @@ export function ScenarioEditorClient({ scenario, assets, software, contracts }: 
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Asset</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Replacement Year</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Defer to Year</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Override Cost ($)</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Exclude</th>
@@ -129,6 +202,7 @@ export function ScenarioEditorClient({ scenario, assets, software, contracts }: 
                     <td className="px-4 py-2 text-gray-500 capitalize">
                       {a.lifecycleStatus.replace(/_/g, ' ')}
                     </td>
+                    <td className="px-4 py-2 text-gray-500">{a.replacementYearOverride ?? '—'}</td>
                     <td className="px-4 py-2">
                       <input
                         type="number"

@@ -122,7 +122,7 @@ export function ScenarioCompareClient({ scenarioName, escalationRate, baseline, 
                 {netDiff === 0 ? '—' : `${netSavings ? '−' : '+'}${formatMoney(Math.abs(netDiff))}`}
               </td>
               <td className={`px-4 py-3 text-right font-semibold ${netSavings ? 'text-green-600' : netDiff > 0 ? 'text-red-600' : 'text-gray-700'}`}>
-                {netDiff === 0 ? '—' : `${netSavings ? '−' : '+'}${Math.abs((netDiff / baselineTotal) * 100).toFixed(1)}%`}
+                {netDiff === 0 || baselineTotal === 0 ? '—' : `${netSavings ? '−' : '+'}${Math.abs((netDiff / baselineTotal) * 100).toFixed(1)}%`}
               </td>
             </tr>
           </tfoot>

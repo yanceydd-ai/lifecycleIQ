@@ -21,9 +21,10 @@ const TYPE_COLORS: Record<string, string> = {
 
 interface Props {
   scenarios: Scenario[];
+  canCreate?: boolean;
 }
 
-export function ScenariosClient({ scenarios }: Props) {
+export function ScenariosClient({ scenarios, canCreate = false }: Props) {
   const router = useRouter();
   const [showNew, setShowNew] = useState(false);
   const [name, setName] = useState('');
@@ -59,12 +60,14 @@ export function ScenariosClient({ scenarios }: Props) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-gray-500">{scenarios.length} scenario{scenarios.length !== 1 ? 's' : ''}</p>
-        <button
-          onClick={() => setShowNew(true)}
-          className="px-3 py-1.5 bg-slate-900 text-white text-sm rounded-md"
-        >
-          + New Scenario
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => setShowNew(true)}
+            className="px-3 py-1.5 bg-slate-900 text-white text-sm rounded-md"
+          >
+            + New Scenario
+          </button>
+        )}
       </div>
 
       {deleteError && <p className="text-sm text-red-600 mb-3">{deleteError}</p>}

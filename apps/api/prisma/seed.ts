@@ -249,9 +249,9 @@ async function main() {
   }
 
   // Seed system scenario presets
-  const conservativeId = 'scn-conservative-0000000';
-  const expectedId     = 'scn-expected-000000000';
-  const aggressiveId   = 'scn-aggressive-00000000';
+  const conservativeId = '00000000-0000-0000-0000-000000000001';
+  const expectedId     = '00000000-0000-0000-0000-000000000002';
+  const aggressiveId   = '00000000-0000-0000-0000-000000000003';
 
   await Promise.all([
     prisma.scenario.upsert({
