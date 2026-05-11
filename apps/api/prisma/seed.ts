@@ -248,6 +248,51 @@ async function main() {
     console.log('Seeded FiscalYearSettings (Jan, 3% escalation)');
   }
 
+  // Seed system scenario presets
+  const conservativeId = 'scn-conservative-0000000';
+  const expectedId     = 'scn-expected-000000000';
+  const aggressiveId   = 'scn-aggressive-00000000';
+
+  await Promise.all([
+    prisma.scenario.upsert({
+      where: { id: conservativeId },
+      update: {},
+      create: {
+        id: conservativeId,
+        name: 'Conservative',
+        type: 'conservative',
+        escalationRate: 0.0500,
+        isSystem: true,
+        isRecommended: false,
+      },
+    }),
+    prisma.scenario.upsert({
+      where: { id: expectedId },
+      update: {},
+      create: {
+        id: expectedId,
+        name: 'Expected',
+        type: 'expected',
+        escalationRate: 0.0300,
+        isSystem: true,
+        isRecommended: true,
+      },
+    }),
+    prisma.scenario.upsert({
+      where: { id: aggressiveId },
+      update: {},
+      create: {
+        id: aggressiveId,
+        name: 'Aggressive',
+        type: 'aggressive',
+        escalationRate: 0.0100,
+        isSystem: true,
+        isRecommended: false,
+      },
+    }),
+  ]);
+  console.log('Seeded 3 system scenario presets (Conservative 5%, Expected 3%, Aggressive 1%)');
+
   console.log('Seed complete.');
 }
 
