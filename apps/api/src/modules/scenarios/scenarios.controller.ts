@@ -18,8 +18,8 @@ export class ScenariosController {
 
   @Post()
   @Roles(Role.Admin, Role.Editor)
-  create(@Body() dto: CreateScenarioDto, @CurrentUser() user: AuthUser | undefined) {
-    return this.service.create(dto, user!.id);
+  create(@Body() dto: CreateScenarioDto, @CurrentUser() user: AuthUser) {
+    return this.service.create(dto, user.id);
   }
 
   @Get(':id')
