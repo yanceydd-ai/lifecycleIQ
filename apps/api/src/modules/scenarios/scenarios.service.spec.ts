@@ -246,7 +246,7 @@ describe('ScenariosService', () => {
     it('deletes an override by id', async () => {
       mockPrisma.scenarioOverride.delete.mockResolvedValue({});
       await service.removeOverride('sc-1', 'ov-1');
-      expect(mockPrisma.scenarioOverride.delete).toHaveBeenCalledWith({ where: { id: 'ov-1' } });
+      expect(mockPrisma.scenarioOverride.delete).toHaveBeenCalledWith({ where: { id: 'ov-1', scenarioId: 'sc-1' } });
     });
   });
 });

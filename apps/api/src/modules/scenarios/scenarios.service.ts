@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { computeForecast } from '../budget/budget.service';
 import { ForecastYear } from '@lifecycleiq/shared';
 
+const DEFAULT_FORECAST_YEARS = 7;
+
 interface OverrideInput {
   entityType: string;
   entityId: string;
@@ -131,7 +133,7 @@ export class ScenariosService {
       fiscalSettings,
       scenario.overrides,
       Number(scenario.escalationRate),
-      7,
+      DEFAULT_FORECAST_YEARS,
       new Date(),
     );
   }
@@ -164,6 +166,6 @@ export class ScenariosService {
   }
 
   async removeOverride(scenarioId: string, overrideId: string): Promise<void> {
-    await this.prisma.scenarioOverride.delete({ where: { id: overrideId } });
+    await this.prisma.scenarioOverride.delete({ where: { id: overrideId, scenarioId } });
   }
 }
