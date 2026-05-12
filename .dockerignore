@@ -1,0 +1,13 @@
+.git
+.worktrees
+node_modules
+apps/api/node_modules
+apps/api/dist
+apps/web/node_modules
+apps/web/.next
+packages/shared/node_modules
+docs
+*.md
+**/.env
+**/.env.local
+**/.env.*.local
