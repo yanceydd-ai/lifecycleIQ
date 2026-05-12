@@ -11,3 +11,4 @@ export * from './types/budget';
 export * from './types/alert';
 export * from './types/recommendation';
 export * from './types/scenario';
+export * from './types/reports';
