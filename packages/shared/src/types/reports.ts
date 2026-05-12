@@ -72,8 +72,8 @@ export interface SoftwareOptimizationReport {
   lowUtilization: {
     name: string;
     utilizationRate: number;
-    qtPurchased: number;
-    qtUsed: number;
+    qtyPurchased: number;
+    qtyUsed: number;
     annualCost: number;
     potentialSavings: number;
   }[];
