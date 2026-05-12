@@ -14,6 +14,8 @@ import { HardwareAssetsModule } from './modules/hardware-assets/hardware-assets.
 import { SoftwareProductsModule } from './modules/software-products/software-products.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { BudgetModule } from './modules/budget/budget.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { BudgetModule } from './modules/budget/budget.module';
     SoftwareProductsModule,
     ContractsModule,
     BudgetModule,
+    AlertsModule,
+    RecommendationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

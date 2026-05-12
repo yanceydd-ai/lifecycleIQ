@@ -1,8 +1,12 @@
-export default function DecisionsPage() {
+import { getRecommendations } from '@/lib/actions/recommendations';
+import { DecisionsClient } from './client';
+
+export default async function DecisionsPage() {
+  const recommendations = await getRecommendations();
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900">Decisions</h1>
-      <p className="mt-2 text-gray-500">Coming in Phase 4 — central workflow for reviewing and acting on technology decisions.</p>
+      <h1 className="text-2xl font-semibold text-gray-900 mb-6">Decisions</h1>
+      <DecisionsClient recommendations={recommendations} />
     </div>
   );
 }
