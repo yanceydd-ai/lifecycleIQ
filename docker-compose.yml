@@ -1,0 +1,64 @@
+name: lifecycleiq
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lifecycleiq
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - lifecycleiq_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d lifecycleiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/lifecycleiq
+      DIRECT_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/lifecycleiq
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      NODE_ENV: production
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    networks:
+      - lifecycleiq_net
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_URL: http://api:3001
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+    ports:
+      - "3000:3000"
+    networks:
+      - lifecycleiq_net
+
+volumes:
+  pgdata:
+
+networks:
+  lifecycleiq_net:
