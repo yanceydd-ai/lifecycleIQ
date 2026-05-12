@@ -31,13 +31,14 @@ export class ReportsService {
   }
 
   private currentFiscalYear(fiscalYearStartMonth: number, today: Date): number {
-    return today.getMonth() + 1 >= fiscalYearStartMonth
-      ? today.getFullYear()
-      : today.getFullYear() - 1;
+    return today.getUTCMonth() + 1 >= fiscalYearStartMonth
+      ? today.getUTCFullYear()
+      : today.getUTCFullYear() - 1;
   }
 
   async getExecutiveBudget(): Promise<ExecutiveBudgetReport> {
     const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
     const settings = await this.getFiscalSettings();
     const [assets, software, contracts] = await Promise.all([
       this.prisma.hardwareAsset.findMany(),
@@ -140,6 +141,7 @@ export class ReportsService {
 
   async getRenewalReview(): Promise<RenewalReviewReport> {
     const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
     const cutoff = addDays(today, RENEWAL_WINDOW_DAYS);
 
     const [contracts, software] = await Promise.all([
@@ -197,6 +199,7 @@ export class ReportsService {
 
   async getCapitalReplacement(): Promise<CapitalReplacementReport> {
     const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
     const settings = await this.getFiscalSettings();
     const currentFY = this.currentFiscalYear(settings.fiscalYearStartMonth, today);
 
@@ -253,6 +256,7 @@ export class ReportsService {
 
   async getSoftwareOptimization(): Promise<SoftwareOptimizationReport> {
     const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
     const software = await this.prisma.softwareProduct.findMany();
 
     const lowUtilization = software

@@ -5,7 +5,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 function dec(n: number) { return { toNumber: () => n } as any; }
 
 function daysFromNow(n: number): Date {
-  return new Date(Date.now() + n * 24 * 60 * 60 * 1000);
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return new Date(d.getTime() + n * 24 * 60 * 60 * 1000);
 }
 
 function mockAsset(overrides: any = {}) {
@@ -220,6 +222,22 @@ describe('ReportsService', () => {
       const result = await service.getRenewalReview();
       expect(result.cancellationDeadlines).toHaveLength(0);
     });
+
+    it('excludes past-due renewals (renewalDate before today)', async () => {
+      mockPrisma.contract.findMany.mockResolvedValue([
+        mockContract({ renewalDate: daysFromNow(-10) }), // already past
+      ]);
+      const result = await service.getRenewalReview();
+      expect(result.upcomingRenewals).toHaveLength(0);
+    });
+
+    it('includes renewals on exactly day 120 (inclusive boundary)', async () => {
+      mockPrisma.contract.findMany.mockResolvedValue([
+        mockContract({ renewalDate: daysFromNow(120), annualCost: dec(1000) }),
+      ]);
+      const result = await service.getRenewalReview();
+      expect(result.upcomingRenewals).toHaveLength(1);
+    });
   });
 
   describe('getCapitalReplacement', () => {
@@ -311,6 +329,14 @@ describe('ReportsService', () => {
       const result = await service.getSoftwareOptimization();
       expect(result.terminationCandidates).toHaveLength(1);
       expect(result.terminationCandidates[0].action).toBe('terminate');
+    });
+
+    it('excludes software with utilization exactly 0.70 (boundary is < 0.70)', async () => {
+      mockPrisma.softwareProduct.findMany.mockResolvedValue([
+        mockSoftware({ qtyPurchased: 10, qtyActivelyUsed: 7 }), // exactly 70%
+      ]);
+      const result = await service.getSoftwareOptimization();
+      expect(result.lowUtilization).toHaveLength(0);
     });
   });
 });
