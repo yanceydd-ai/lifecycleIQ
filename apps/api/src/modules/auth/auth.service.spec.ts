@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
@@ -31,6 +32,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: { sign: jest.fn().mockReturnValue('mock-token') },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn() },
         },
       ],
     }).compile();
@@ -86,6 +91,46 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
 
       expect(bcrypt.compare).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('ssoLogin', () => {
+    const VALID_SECRET = 'test-sso-secret';
+
+    beforeEach(() => {
+      jest.spyOn(service as any, 'getSsoSecret').mockReturnValue(VALID_SECRET);
+    });
+
+    it('throws UnauthorizedException when internalSecret does not match', async () => {
+      await expect(
+        service.ssoLogin({ email: 'admin@test.com', internalSecret: 'wrong-secret' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when user is not found', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        service.ssoLogin({ email: 'nobody@test.com', internalSecret: VALID_SECRET }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when user is inactive', async () => {
+      usersService.findByEmail.mockResolvedValue({ ...mockUser, isActive: false } as any);
+
+      await expect(
+        service.ssoLogin({ email: 'admin@test.com', internalSecret: VALID_SECRET }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('returns accessToken and user when secret and email are valid', async () => {
+      usersService.findByEmail.mockResolvedValue(mockUser as any);
+
+      const result = await service.ssoLogin({ email: 'admin@test.com', internalSecret: VALID_SECRET });
+
+      expect(result.accessToken).toBe('mock-token');
+      expect(result.user.email).toBe('admin@test.com');
+      expect(result.user).not.toHaveProperty('passwordHash');
     });
   });
 });
