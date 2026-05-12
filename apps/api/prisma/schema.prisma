@@ -204,6 +204,7 @@ model HardwareAsset {
   purchaseDate            DateTime?       @map("purchase_date")
   purchaseCost            Decimal?        @map("purchase_cost") @db.Decimal(12, 2)
   replacementCost         Decimal?        @map("replacement_cost") @db.Decimal(12, 2)
+  annualMaintenanceCost   Decimal?        @map("annual_maintenance_cost") @db.Decimal(12, 2)
   usefulLifeYears         Int?            @map("useful_life_years")
   replacementYearOverride Int?            @map("replacement_year_override")
   warrantyEndDate         DateTime?       @map("warranty_end_date")
@@ -297,4 +298,14 @@ model Contract {
   updatedAt                    DateTime         @updatedAt @map("updated_at")
 
   @@map("contracts")
+}
+
+model FiscalYearSettings {
+  id                    String   @id @default(uuid())
+  fiscalYearStartMonth  Int      @default(1) @map("fiscal_year_start_month")
+  defaultEscalationRate Decimal  @default(0.03) @db.Decimal(5, 4) @map("default_escalation_rate")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("fiscal_year_settings")
 }

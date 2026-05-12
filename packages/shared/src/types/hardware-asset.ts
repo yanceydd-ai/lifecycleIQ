@@ -9,6 +9,7 @@ export interface HardwareAsset {
   purchaseCost: string | null;
   replacementCost: string | null;
   usefulLifeYears: number | null;
+  annualMaintenanceCost: string | null;
   replacementYearOverride: number | null;
   warrantyEndDate: Date | null;
   supportEndDate: Date | null;
@@ -41,6 +42,7 @@ export interface CreateHardwareAssetInput {
   purchaseCost?: string;
   replacementCost?: string;
   usefulLifeYears?: number;
+  annualMaintenanceCost?: string;
   replacementYearOverride?: number;
   warrantyEndDate?: string;
   supportEndDate?: string;

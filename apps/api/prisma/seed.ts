@@ -235,6 +235,19 @@ async function main() {
   console.log(`Created ${contracts.length} contracts`);
 
   console.log('Seeded hardware assets, software products, and contracts');
+
+  // Seed FiscalYearSettings singleton
+  const existingFiscalSettings = await prisma.fiscalYearSettings.findFirst();
+  if (!existingFiscalSettings) {
+    await prisma.fiscalYearSettings.create({
+      data: {
+        fiscalYearStartMonth: 1,
+        defaultEscalationRate: 0.03,
+      },
+    });
+    console.log('Seeded FiscalYearSettings (Jan, 3% escalation)');
+  }
+
   console.log('Seed complete.');
 }
 

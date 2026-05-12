@@ -14,6 +14,7 @@ import {
   BarChart2,
   Upload,
   Settings,
+  Calendar,
 } from 'lucide-react';
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { label: 'Reports', href: '/reports', icon: BarChart2 },
   { label: 'Imports', href: '/imports', icon: Upload },
   { label: 'Settings', href: '/settings/users', icon: Settings },
+  { label: 'Fiscal Year Settings', href: '/settings/fiscal-year', icon: Calendar },
 ];
 
 export function Sidebar() {
