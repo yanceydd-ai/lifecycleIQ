@@ -54,21 +54,26 @@ export class AuthService {
 
   async ssoLogin(dto: SsoDto) {
     const expectedSecret = this.getSsoSecret();
-    const providedBuf = Buffer.from(dto.internalSecret);
-    const expectedBuf = Buffer.from(expectedSecret);
 
-    const isValid =
-      providedBuf.length === expectedBuf.length &&
-      crypto.timingSafeEqual(providedBuf, expectedBuf);
+    // Fail closed if secret is not configured
+    if (!expectedSecret) {
+      throw new UnauthorizedException('SSO authentication failed');
+    }
+
+    // Hash both sides to fixed-length buffers before comparing, eliminating
+    // the timing leak from a length pre-check.
+    const providedBuf = crypto.createHash('sha256').update(dto.internalSecret).digest();
+    const expectedBuf = crypto.createHash('sha256').update(expectedSecret).digest();
+    const isValid = crypto.timingSafeEqual(providedBuf, expectedBuf);
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid SSO secret');
+      throw new UnauthorizedException('SSO authentication failed');
     }
 
     const user = await this.usersService.findByEmail(dto.email);
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not provisioned for SSO');
+      throw new UnauthorizedException('SSO authentication failed');
     }
 
     const payload: JwtPayload = {

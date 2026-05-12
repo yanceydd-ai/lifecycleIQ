@@ -104,7 +104,7 @@ describe('AuthService', () => {
     it('throws UnauthorizedException when internalSecret does not match', async () => {
       await expect(
         service.ssoLogin({ email: 'admin@test.com', internalSecret: 'wrong-secret' }),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(new UnauthorizedException('SSO authentication failed'));
     });
 
     it('throws UnauthorizedException when user is not found', async () => {
@@ -112,7 +112,7 @@ describe('AuthService', () => {
 
       await expect(
         service.ssoLogin({ email: 'nobody@test.com', internalSecret: VALID_SECRET }),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(new UnauthorizedException('SSO authentication failed'));
     });
 
     it('throws UnauthorizedException when user is inactive', async () => {
@@ -120,7 +120,15 @@ describe('AuthService', () => {
 
       await expect(
         service.ssoLogin({ email: 'admin@test.com', internalSecret: VALID_SECRET }),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(new UnauthorizedException('SSO authentication failed'));
+    });
+
+    it('throws UnauthorizedException when SSO_INTERNAL_SECRET is not configured', async () => {
+      jest.spyOn(service as any, 'getSsoSecret').mockReturnValue('');
+
+      await expect(
+        service.ssoLogin({ email: 'admin@test.com', internalSecret: '' }),
+      ).rejects.toThrow(new UnauthorizedException('SSO authentication failed'));
     });
 
     it('returns accessToken and user when secret and email are valid', async () => {
