@@ -26,19 +26,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production PORT=3001
 
-# Install pnpm for prod dependency install
-RUN npm install -g pnpm@9
-
-# Copy workspace manifests for prod install
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/shared/package.json ./packages/shared/
-COPY apps/api/package.json ./apps/api/
-
-# Install production dependencies only (excludes jest, typescript, etc.)
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy generated Prisma client from builder (prisma generate output not included in --prod install)
-COPY --from=builder /app/apps/api/node_modules/.prisma ./apps/api/node_modules/.prisma
+# Copy node_modules from builder. Docker COPY follows pnpm symlinks (including
+# the @lifecycleiq/shared symlink), so all runtime deps resolve correctly.
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 # Copy built output
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
@@ -46,6 +37,7 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 # Copy Prisma schema + migrations (required for prisma migrate deploy)
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
+# Run as non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
