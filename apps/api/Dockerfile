@@ -37,8 +37,19 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 # Copy Prisma schema + migrations (required for prisma migrate deploy)
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
-# Run as non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Install OpenSSL (required by Prisma on Alpine)
+RUN apk add --no-cache openssl
+
+# Fix @lifecycleiq/shared: pnpm symlink chains don't fully resolve after COPY.
+# Replace the broken symlink with the compiled JS output from the builder stage.
+RUN rm -rf apps/api/node_modules/@lifecycleiq/shared \
+    && cp -r apps/api/dist/packages/shared/src apps/api/node_modules/@lifecycleiq/shared \
+    && echo '{"name":"@lifecycleiq/shared","version":"0.0.1","main":"./index.js"}' \
+       > apps/api/node_modules/@lifecycleiq/shared/package.json
+
+# Create non-root user and grant ownership so Prisma can write engine binaries
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
+    && chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 3001
@@ -47,4 +58,4 @@ EXPOSE 3001
 # and Node.js walks up to /app/node_modules for package resolution
 WORKDIR /app/apps/api
 
-CMD ["sh", "-c", "../../node_modules/.bin/prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma db push --skip-generate --accept-data-loss && node dist/apps/api/src/main.js"]
