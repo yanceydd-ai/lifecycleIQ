@@ -122,6 +122,13 @@ enum ApprovalStatus {
   cancelled
 }
 
+enum ScenarioType {
+  conservative
+  expected
+  aggressive
+  custom
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
@@ -325,4 +332,33 @@ model DecisionHistory {
   createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("decision_history")
+}
+
+model Scenario {
+  id             String             @id @default(uuid())
+  name           String
+  type           ScenarioType
+  escalationRate Decimal            @db.Decimal(5, 4) @map("escalation_rate")
+  isRecommended  Boolean            @default(false) @map("is_recommended")
+  isSystem       Boolean            @default(false) @map("is_system")
+  createdBy      String?            @map("created_by")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  overrides      ScenarioOverride[]
+
+  @@map("scenarios")
+}
+
+model ScenarioOverride {
+  id           String   @id @default(uuid())
+  scenarioId   String   @map("scenario_id")
+  scenario     Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  overrideType String   @map("override_type")
+  value        String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([scenarioId, entityType, entityId, overrideType])
+  @@map("scenario_overrides")
 }

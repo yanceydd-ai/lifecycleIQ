@@ -16,6 +16,7 @@ import { ContractsModule } from './modules/contracts/contracts.module';
 import { BudgetModule } from './modules/budget/budget.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { ScenariosModule } from './modules/scenarios/scenarios.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
     BudgetModule,
     AlertsModule,
     RecommendationsModule,
+    ScenariosModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
