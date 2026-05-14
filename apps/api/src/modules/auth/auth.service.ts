@@ -1,9 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { Role } from '@lifecycleiq/shared';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { SsoDto } from './dto/sso.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 // Pre-computed bcrypt hash used as a timing dummy when user is not found.
@@ -15,7 +18,13 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private config: ConfigService,
   ) {}
+
+  // Extracted for testability — can be spied on in tests
+  getSsoSecret(): string {
+    return this.config.get<string>('SSO_INTERNAL_SECRET') ?? '';
+  }
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
@@ -24,6 +33,47 @@ export class AuthService {
 
     if (!user || !user.isActive || !match) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role as Role,
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+      },
+    };
+  }
+
+  async ssoLogin(dto: SsoDto) {
+    const expectedSecret = this.getSsoSecret();
+
+    // Fail closed if secret is not configured
+    if (!expectedSecret) {
+      throw new UnauthorizedException('SSO authentication failed');
+    }
+
+    // Hash both sides to fixed-length buffers before comparing, eliminating
+    // the timing leak from a length pre-check.
+    const providedBuf = crypto.createHash('sha256').update(dto.internalSecret).digest();
+    const expectedBuf = crypto.createHash('sha256').update(expectedSecret).digest();
+    const isValid = crypto.timingSafeEqual(providedBuf, expectedBuf);
+
+    if (!isValid) {
+      throw new UnauthorizedException('SSO authentication failed');
+    }
+
+    const user = await this.usersService.findByEmail(dto.email);
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('SSO authentication failed');
     }
 
     const payload: JwtPayload = {
