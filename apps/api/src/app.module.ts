@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -18,10 +19,12 @@ import { AlertsModule } from './modules/alerts/alerts.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ScenariosModule } from './modules/scenarios/scenarios.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     AuditLogModule,
@@ -37,6 +40,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     RecommendationsModule,
     ScenariosModule,
     ReportsModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
