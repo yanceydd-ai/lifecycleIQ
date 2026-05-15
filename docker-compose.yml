@@ -34,6 +34,13 @@ services:
       NODE_ENV: production
       PORT: 3001
       SSO_INTERNAL_SECRET: ${SSO_INTERNAL_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      ALERT_TO_EMAIL: ${ALERT_TO_EMAIL:-}
+      ALERT_CRON_SCHEDULE: ${ALERT_CRON_SCHEDULE:-0 8 * * *}
     ports:
       - "3001:3001"
     networks:
