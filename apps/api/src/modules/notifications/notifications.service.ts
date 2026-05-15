@@ -22,16 +22,23 @@ export class NotificationsService {
     const host = this.config.get<string>('SMTP_HOST');
     if (!host) return null;
     if (!this.transporter) {
+      const smtpUser = this.config.get<string>('SMTP_USER');
+      const smtpPass = this.config.get<string>('SMTP_PASS');
       this.transporter = nodemailer.createTransport({
         host,
         port: this.config.get<number>('SMTP_PORT') ?? 587,
-        auth: {
-          user: this.config.get<string>('SMTP_USER'),
-          pass: this.config.get<string>('SMTP_PASS'),
-        },
+        ...(smtpUser && smtpPass ? { auth: { user: smtpUser, pass: smtpPass } } : {}),
       });
     }
     return this.transporter;
+  }
+
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   buildSubject(alerts: Alert[]): string {
@@ -46,7 +53,7 @@ export class NotificationsService {
       if (!group.length) continue;
       body += `<h3>${SEVERITY_LABEL[sev]}</h3><ul>`;
       for (const a of group) {
-        body += `<li>${a.message}</li>`;
+        body += `<li>${this.escapeHtml(a.message)}</li>`;
       }
       body += '</ul>';
     }
