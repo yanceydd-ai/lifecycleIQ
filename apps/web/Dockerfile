@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY packages/shared/ ./packages/shared/
 COPY apps/web/ ./apps/web/
 
-# Build Next.js (output: standalone is set in next.config.ts)
+# Build Next.js (output: standalone is set in next.config.mjs)
 RUN pnpm --filter=@lifecycleiq/web build
 
 # ── Stage 2: Production ───────────────────────────────────────────────────────
