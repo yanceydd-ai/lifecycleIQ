@@ -58,4 +58,4 @@ EXPOSE 3001
 # and Node.js walks up to /app/node_modules for package resolution
 WORKDIR /app/apps/api
 
-CMD ["sh", "-c", "node_modules/.bin/prisma db push --skip-generate --accept-data-loss && node dist/apps/api/src/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/apps/api/src/main.js"]
