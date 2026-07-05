@@ -4,25 +4,37 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
     const req = ctx.getRequest<Request>();
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const isHttpException = exception instanceof HttpException;
 
-    const exceptionResponse =
-      exception instanceof HttpException ? exception.getResponse() : null;
+    const status = isHttpException
+      ? exception.getStatus()
+      : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const detail = extractDetail(exceptionResponse, exception);
+    // Unhandled exceptions (Prisma errors, connection failures, ...) may carry
+    // internal details; log them server-side and return a generic message.
+    if (!isHttpException) {
+      this.logger.error(
+        `Unhandled exception on ${req.method} ${req.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    }
+
+    const detail = isHttpException
+      ? extractDetail(exception.getResponse())
+      : 'An unexpected error occurred';
 
     res.status(status).json({
       status,
@@ -33,13 +45,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 }
 
-function extractDetail(
-  exceptionResponse: string | object | null,
-  exception: unknown,
-): string | string[] {
-  if (exceptionResponse === null) {
-    return exception instanceof Error ? exception.message : 'An error occurred';
-  }
+function extractDetail(exceptionResponse: string | object): string | string[] {
   if (typeof exceptionResponse === 'object') {
     const msg = (exceptionResponse as Record<string, unknown>).message;
     if (msg !== undefined) return msg as string | string[];

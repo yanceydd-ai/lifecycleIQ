@@ -175,7 +175,7 @@ describe('HardwareAssetsService', () => {
       mockCsvService.parse.mockReturnValue([
         { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
       ]);
-      mockPrisma.hardwareAsset.findFirst.mockResolvedValue(null);
+      mockPrisma.hardwareAsset.findMany.mockResolvedValue([]);
     });
 
     it('returns valid row for a well-formed CSV', async () => {
@@ -203,11 +203,33 @@ describe('HardwareAssetsService', () => {
       expect(result.invalidRows[0].errors.some((e) => e.toLowerCase().includes('criticality'))).toBe(true);
     });
 
-    it('flags duplicate assetTag', async () => {
-      mockPrisma.hardwareAsset.findFirst.mockResolvedValue({ id: 'existing' });
+    it('flags assetTag that already exists in the database', async () => {
+      mockPrisma.hardwareAsset.findMany.mockResolvedValue([{ assetTag: 'HW-001' }]);
       const result = await service.importPreview('csv-string');
       expect(result.invalidRows).toHaveLength(1);
       expect(result.invalidRows[0].errors[0]).toBe('assetTag: already exists');
+    });
+
+    it('flags assetTag duplicated within the same file', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+        { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+      ]);
+      const result = await service.importPreview('csv-string');
+      expect(result.validRows).toHaveLength(1);
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors[0]).toBe('assetTag: duplicated in file');
+    });
+
+    it('checks existing assetTags with a single batched query', async () => {
+      mockCsvService.parse.mockReturnValue([
+        { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+        { assetTag: 'HW-002', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+        { assetTag: 'HW-003', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
+      ]);
+      await service.importPreview('csv-string');
+      expect(mockPrisma.hardwareAsset.findMany).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.hardwareAsset.findFirst).not.toHaveBeenCalled();
     });
 
     it('separates valid and invalid rows in same CSV', async () => {
@@ -215,7 +237,6 @@ describe('HardwareAssetsService', () => {
         { assetTag: 'HW-001', assetType: 'laptop', lifecycleStatus: 'active', criticality: 'medium' },
         { assetTag: 'HW-002', assetType: 'BADTYPE', lifecycleStatus: 'active', criticality: 'medium' },
       ]);
-      mockPrisma.hardwareAsset.findFirst.mockResolvedValue(null);
       const result = await service.importPreview('csv-string');
       expect(result.totalRows).toBe(2);
       expect(result.validRows).toHaveLength(1);
