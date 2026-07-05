@@ -158,6 +158,14 @@ export class HardwareAssetsService {
     const validRows: Record<string, string>[] = [];
     const invalidRows: { rowNumber: number; data: Record<string, string>; errors: string[] }[] = [];
 
+    const tags = rows.map((r) => r.assetTag).filter(Boolean);
+    const existing = await this.prisma.hardwareAsset.findMany({
+      where: { assetTag: { in: tags } },
+      select: { assetTag: true },
+    });
+    const existingTags = new Set(existing.map((a) => a.assetTag));
+    const seenTags = new Set<string>();
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowErrors: string[] = [];
@@ -171,10 +179,13 @@ export class HardwareAssetsService {
       }
 
       if (!rowErrors.length && row.assetTag) {
-        const existing = await this.prisma.hardwareAsset.findFirst({
-          where: { assetTag: row.assetTag },
-        });
-        if (existing) rowErrors.push('assetTag: already exists');
+        if (existingTags.has(row.assetTag)) {
+          rowErrors.push('assetTag: already exists');
+        } else if (seenTags.has(row.assetTag)) {
+          rowErrors.push('assetTag: duplicated in file');
+        } else {
+          seenTags.add(row.assetTag);
+        }
       }
 
       if (rowErrors.length > 0) {

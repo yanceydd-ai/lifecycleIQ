@@ -1,7 +1,13 @@
 export function toCsv(headers: string[], rows: (string | number | null | undefined)[][]): string {
   const escape = (v: string | number | null | undefined): string => {
     if (v === null || v === undefined) return '';
-    const s = String(v);
+    let s = String(v);
+    // Formula-injection guard: only free-text (string) fields can carry
+    // attacker-controlled formulas; numbers stay untouched so negatives
+    // survive round-trips.
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) {
+      s = `'${s}`;
+    }
     return s.includes(',') || s.includes('"') || s.includes('\n')
       ? `"${s.replace(/"/g, '""')}"`
       : s;

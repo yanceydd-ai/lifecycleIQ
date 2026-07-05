@@ -28,7 +28,13 @@ export class CsvService {
       columns
         .map((col) => {
           const val = r[col];
-          const str = val === null || val === undefined ? '' : String(val);
+          let str = val === null || val === undefined ? '' : String(val);
+          // Formula-injection guard: only free-text (string) fields can carry
+          // attacker-controlled formulas; numeric/Decimal/Date values stay
+          // untouched so negative numbers survive round-trips.
+          if (typeof val === 'string' && /^[=+\-@\t\r]/.test(str)) {
+            str = `'${str}`;
+          }
           return str.includes(',') || str.includes('\n') || str.includes('"')
             ? `"${str.replace(/"/g, '""')}"`
             : str;

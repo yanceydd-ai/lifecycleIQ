@@ -73,5 +73,37 @@ describe('CsvService', () => {
       );
       expect(result).toBe('active,count\ntrue,42');
     });
+
+    it('neutralizes strings starting with = to prevent formula injection', () => {
+      const result = service.serialize(
+        [{ notes: '=SUM(A1:A9)' }] as any,
+        ['notes'],
+      );
+      expect(result).toBe("notes\n'=SUM(A1:A9)");
+    });
+
+    it('neutralizes strings starting with +, -, and @', () => {
+      const result = service.serialize(
+        [{ a: '+cmd|calc', b: '-2+3', c: '@SUM(1)' }] as any,
+        ['a', 'b', 'c'],
+      );
+      expect(result).toBe("a,b,c\n'+cmd|calc,'-2+3,'@SUM(1)");
+    });
+
+    it('does not alter negative numbers', () => {
+      const result = service.serialize(
+        [{ count: -42 }] as any,
+        ['count'],
+      );
+      expect(result).toBe('count\n-42');
+    });
+
+    it('quotes and neutralizes a formula containing commas', () => {
+      const result = service.serialize(
+        [{ notes: '=HYPERLINK("http://evil",1),x' }] as any,
+        ['notes'],
+      );
+      expect(result).toBe('notes\n"\'=HYPERLINK(""http://evil"",1),x"');
+    });
   });
 });
