@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "start": "node dist/main",
     "test": "jest",
     "test:watch": "jest --watch",
