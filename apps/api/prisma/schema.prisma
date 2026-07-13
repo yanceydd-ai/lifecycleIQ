@@ -316,6 +316,7 @@ model FiscalYearSettings {
   id                    String   @id @default(uuid())
   fiscalYearStartMonth  Int      @default(1) @map("fiscal_year_start_month")
   defaultEscalationRate Decimal  @default(0.03) @db.Decimal(5, 4) @map("default_escalation_rate")
+  budgetSpikeThreshold  Decimal  @default(0.30) @db.Decimal(5, 4) @map("budget_spike_threshold")
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
@@ -331,6 +332,7 @@ model DecisionHistory {
   rationale      String
   userId         String   @map("user_id") // soft reference — no FK, consistent with AuditLog pattern
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("decision_history")
 }

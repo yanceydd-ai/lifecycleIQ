@@ -16,7 +16,10 @@ export async function apiServer<T>(
   const session = await auth();
   const token = (session?.user as any)?.accessToken;
 
-  const res = await fetch(`${process.env.API_URL}${path}`, {
+  const apiUrl = process.env.API_URL;
+  if (!apiUrl) throw new Error('API_URL environment variable is not set');
+
+  const res = await fetch(`${apiUrl}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

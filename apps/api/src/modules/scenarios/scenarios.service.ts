@@ -17,7 +17,7 @@ export function computeScenarioForecast(
   assets: HardwareAsset[],
   software: SoftwareProduct[],
   contracts: Contract[],
-  settings: { fiscalYearStartMonth: number; defaultEscalationRate: number },
+  settings: { fiscalYearStartMonth: number; defaultEscalationRate: number; budgetSpikeThreshold: number },
   overrides: OverrideInput[],
   scenarioEscalationRate: number,
   years: number,
@@ -120,6 +120,7 @@ export class ScenariosService {
     const fiscalSettings = {
       fiscalYearStartMonth: settings?.fiscalYearStartMonth ?? 1,
       defaultEscalationRate: settings ? Number(settings.defaultEscalationRate) : 0.03,
+      budgetSpikeThreshold: settings ? Number(settings.budgetSpikeThreshold) : 0.30,
     };
     const [assets, software, contracts] = await Promise.all([
       this.prisma.hardwareAsset.findMany(),

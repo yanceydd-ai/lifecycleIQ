@@ -1,9 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsInt, IsNumberString, IsDateString, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsInt, IsNumberString, IsDateString, IsUUID, MaxLength } from 'class-validator';
 import { LicenseModel, SoftwareStatus, RecommendedAction } from '@prisma/client';
 
 export class CreateSoftwareProductDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
   @IsOptional() @IsUUID()
@@ -33,7 +34,7 @@ export class CreateSoftwareProductDto {
   @IsOptional() @IsEnum(RecommendedAction)
   recommendedAction?: RecommendedAction;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(5000)
   notes?: string;
 
   @IsOptional() @IsUUID()

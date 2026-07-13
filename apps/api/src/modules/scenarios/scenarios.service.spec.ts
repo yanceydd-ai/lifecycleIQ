@@ -5,7 +5,7 @@ import { computeForecast } from '../budget/budget.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const TODAY = new Date('2026-05-10');
-const SETTINGS = { fiscalYearStartMonth: 1, defaultEscalationRate: 0.03 };
+const SETTINGS = { fiscalYearStartMonth: 1, defaultEscalationRate: 0.03, budgetSpikeThreshold: 0.30 };
 
 function dec(n: number) { return { toNumber: () => n } as any; }
 

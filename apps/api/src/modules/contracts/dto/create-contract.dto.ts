@@ -8,6 +8,7 @@ import {
   IsDateString,
   IsUUID,
   IsBoolean,
+  MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ContractType, ApprovalStatus } from '@prisma/client';
@@ -15,6 +16,7 @@ import { ContractType, ApprovalStatus } from '@prisma/client';
 export class CreateContractDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
   @IsNotEmpty()
@@ -64,5 +66,6 @@ export class CreateContractDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   notes?: string;
 }

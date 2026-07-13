@@ -12,4 +12,10 @@ export class UpdateFiscalYearSettingsDto {
   @Min(0)
   @Max(1)
   defaultEscalationRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  @Max(5)
+  budgetSpikeThreshold?: number;
 }

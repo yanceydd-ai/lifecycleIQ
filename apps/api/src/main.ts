@@ -19,8 +19,13 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  const webUrl = process.env.WEB_URL;
+  if (!webUrl && process.env.NODE_ENV === 'production') {
+    throw new Error('WEB_URL must be set in production');
+  }
+
   app.enableCors({
-    origin: process.env.WEB_URL || 'http://localhost:3000',
+    origin: webUrl ?? 'http://localhost:3000',
     credentials: true,
   });
 

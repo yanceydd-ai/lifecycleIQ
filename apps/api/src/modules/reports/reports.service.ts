@@ -23,11 +23,14 @@ export class ReportsService {
 
   private async getFiscalSettings() {
     const s = await this.prisma.fiscalYearSettings.findFirst();
-    if (!s) return { fiscalYearStartMonth: 1, defaultEscalationRate: 0.03 };
+    if (!s) return { fiscalYearStartMonth: 1, defaultEscalationRate: 0.03, budgetSpikeThreshold: 0.30 };
     const rate = (s.defaultEscalationRate as any)?.toNumber
       ? (s.defaultEscalationRate as any).toNumber()
       : Number(s.defaultEscalationRate);
-    return { fiscalYearStartMonth: s.fiscalYearStartMonth, defaultEscalationRate: rate };
+    const spike = (s.budgetSpikeThreshold as any)?.toNumber
+      ? (s.budgetSpikeThreshold as any).toNumber()
+      : Number(s.budgetSpikeThreshold);
+    return { fiscalYearStartMonth: s.fiscalYearStartMonth, defaultEscalationRate: rate, budgetSpikeThreshold: spike };
   }
 
   private currentFiscalYear(fiscalYearStartMonth: number, today: Date): number {

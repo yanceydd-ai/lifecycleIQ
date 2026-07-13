@@ -22,7 +22,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : null;
 
-    const detail = extractDetail(exceptionResponse, exception);
+    const rawDetail = extractDetail(exceptionResponse, exception);
+    const detail =
+      status === 500 && process.env.NODE_ENV === 'production'
+        ? 'An internal error occurred'
+        : rawDetail;
 
     res.status(status).json({
       status,

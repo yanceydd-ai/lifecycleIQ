@@ -8,12 +8,13 @@ export function computeForecast(
   assets: HardwareAsset[],
   softwareProducts: SoftwareProduct[],
   contracts: Contract[],
-  settings: { fiscalYearStartMonth: number; defaultEscalationRate: number },
+  settings: { fiscalYearStartMonth: number; defaultEscalationRate: number; budgetSpikeThreshold: number },
   years: number,
   today: Date,
 ): ForecastYear[] {
   const { fiscalYearStartMonth } = settings;
   const rate = Number(settings.defaultEscalationRate);
+  const spikeThreshold = 1 + Number(settings.budgetSpikeThreshold);
 
   const currentFiscalYear =
     today.getMonth() + 1 >= fiscalYearStartMonth
@@ -85,7 +86,7 @@ export function computeForecast(
   for (let i = 1; i < result.length; i++) {
     const priorTotals = result.slice(0, i).map(y => y.total);
     const rollingAvg = priorTotals.reduce((s, t) => s + t, 0) / priorTotals.length;
-    result[i].isSpike = result[i].total > rollingAvg * 1.30;
+    result[i].isSpike = result[i].total > rollingAvg * spikeThreshold;
   }
 
   return result;
@@ -131,6 +132,7 @@ export class BudgetService {
       {
         fiscalYearStartMonth: settings.fiscalYearStartMonth,
         defaultEscalationRate: Number(settings.defaultEscalationRate),
+        budgetSpikeThreshold: Number(settings.budgetSpikeThreshold),
       },
       years,
       new Date(),

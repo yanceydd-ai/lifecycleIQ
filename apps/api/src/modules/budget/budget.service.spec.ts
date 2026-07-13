@@ -23,7 +23,7 @@ function mockContract(overrides: any = {}) {
   return { id: 'ct-1', name: 'Microsoft EA', endDate: null, annualCost: dec(5000), ...overrides };
 }
 
-const BASE = { fiscalYearStartMonth: 1, defaultEscalationRate: 0.03 };
+const BASE = { fiscalYearStartMonth: 1, defaultEscalationRate: 0.03, budgetSpikeThreshold: 0.30 };
 const TODAY = new Date('2026-05-06');
 
 describe('computeForecast', () => {
@@ -38,13 +38,13 @@ describe('computeForecast', () => {
 
   it('correctly determines FY when today is before fiscal year start month', () => {
     // FY starts April; today Feb 2026 → current FY is 2025
-    const result = computeForecast([], [], [], { fiscalYearStartMonth: 4, defaultEscalationRate: 0 }, 1, new Date('2026-02-01'));
+    const result = computeForecast([], [], [], { fiscalYearStartMonth: 4, defaultEscalationRate: 0, budgetSpikeThreshold: 0.30 }, 1, new Date('2026-02-01'));
     expect(result[0].fiscalYear).toBe(2025);
   });
 
   it('places hardware replacement CapEx only in the correct fiscal year', () => {
     const asset = mockAsset({ replacementYearOverride: 2028, purchaseCost: dec(5000) });
-    const result = computeForecast([asset], [], [], { ...BASE, defaultEscalationRate: 0 }, 7, TODAY);
+    const result = computeForecast([asset], [], [], { ...BASE, defaultEscalationRate: 0, budgetSpikeThreshold: 0.30 }, 7, TODAY);
     expect(result.find(y => y.fiscalYear === 2028)!.breakdown.hardwareReplacement).toBe(5000);
     expect(result.find(y => y.fiscalYear === 2026)!.breakdown.hardwareReplacement).toBe(0);
   });
@@ -57,7 +57,7 @@ describe('computeForecast', () => {
 
   it('escalates hardware maintenance cost by offset year', () => {
     const asset = mockAsset({ annualMaintenanceCost: dec(1000) });
-    const result = computeForecast([asset], [], [], { fiscalYearStartMonth: 1, defaultEscalationRate: 0.10 }, 3, TODAY);
+    const result = computeForecast([asset], [], [], { fiscalYearStartMonth: 1, defaultEscalationRate: 0.10, budgetSpikeThreshold: 0.30 }, 3, TODAY);
     expect(result[0].breakdown.hardwareMaintenance).toBeCloseTo(1000, 1);
     expect(result[1].breakdown.hardwareMaintenance).toBeCloseTo(1100, 1);
     expect(result[2].breakdown.hardwareMaintenance).toBeCloseTo(1210, 1);
@@ -79,7 +79,7 @@ describe('computeForecast', () => {
   it('flags spike when year total exceeds rolling avg × 1.30', () => {
     const a1 = mockAsset({ id: 'hw-a', replacementYearOverride: 2026, purchaseCost: dec(1000), annualMaintenanceCost: null });
     const a2 = mockAsset({ id: 'hw-b', replacementYearOverride: 2027, purchaseCost: dec(2000), annualMaintenanceCost: null });
-    const result = computeForecast([a1, a2], [], [], { fiscalYearStartMonth: 1, defaultEscalationRate: 0 }, 2, TODAY);
+    const result = computeForecast([a1, a2], [], [], { fiscalYearStartMonth: 1, defaultEscalationRate: 0, budgetSpikeThreshold: 0.30 }, 2, TODAY);
     expect(result[0].isSpike).toBe(false);
     expect(result[1].isSpike).toBe(true);
   });
@@ -101,6 +101,7 @@ const mockPrisma = {
 const defaultSettingsRow = {
   id: 'fys-1', fiscalYearStartMonth: 1,
   defaultEscalationRate: { toNumber: () => 0.03 },
+  budgetSpikeThreshold: { toNumber: () => 0.30 },
   createdAt: new Date(), updatedAt: new Date(),
 };
 

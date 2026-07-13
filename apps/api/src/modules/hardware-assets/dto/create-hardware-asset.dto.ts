@@ -1,20 +1,20 @@
-import { IsString, IsOptional, IsEnum, IsInt, IsNumberString, IsDateString, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsInt, IsNumberString, IsDateString, IsUUID, MaxLength } from 'class-validator';
 import { AssetType, LifecycleStatus, Criticality, FundingType } from '@prisma/client';
 
 export class CreateHardwareAssetDto {
   @IsEnum(AssetType)
   assetType: AssetType;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(100)
   assetTag?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(100)
   manufacturer?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(100)
   model?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(100)
   serialNumber?: string;
 
   @IsOptional() @IsDateString()
@@ -62,12 +62,12 @@ export class CreateHardwareAssetDto {
   @IsOptional() @IsUUID()
   assignedUserId?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(255)
   businessOwner?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(255)
   technicalOwner?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(5000)
   notes?: string;
 }
